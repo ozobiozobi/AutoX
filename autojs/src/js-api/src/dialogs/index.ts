@@ -2,7 +2,10 @@
 import { EventEmitter } from 'node:events'
 import { xml, Component, ModifierExtension, defineComponent, createApp, ref, reactive } from '@/vue-ui'
 import { nodeOps } from '@/vue-ui/nodeOps'
-import { createDialogContent, DialogBuilderOptions, DialogEventListener, InputDialogOptions } from './options'
+import {
+    createDialogContent, DialogBuilderOptions,
+    IDialogs, DialogEventListener, InputDialogOptions
+} from './options'
 import { padding, fillMaxWidth, height, heightIn, clickable } from '@/vue-ui/modifierExtension'
 import DialogFactory from './DialogFactory'
 
@@ -55,7 +58,7 @@ class Dialog extends EventEmitter<Record<DialogEvent, any[]>>
         this._nv?.dismiss()
     }
 }
-export function showDialog(options: DialogBuilderOptions): DialogInterface {
+export const showDialog: IDialogs['showDialog'] = function (options: DialogBuilderOptions) {
     const { type = defaultDialogType, dismissOnBackPress, dismissOnClickOutside } = options
     const Content = createDialogContent(options)
     let dialog: DialogInterface
@@ -100,25 +103,26 @@ export function showDialog(options: DialogBuilderOptions): DialogInterface {
  * @param options 
  * @returns Promise将在对话框消失时完成
  */
-export async function showAlertDialog(title: string, options?: DialogBuilderOptions) {
-    const f: DialogBuilderOptions = {
-        title: title,
-        positive: '确认',
-    }
-    const dialog = showDialog(Object.assign(f, options))
+export const showAlertDialog: IDialogs['showAlertDialog'] =
+    async function (title: string, options?: DialogBuilderOptions) {
+        const f: DialogBuilderOptions = {
+            title: title,
+            positive: '确认',
+        }
+        const dialog = showDialog(Object.assign(f, options))
 
-    return new Promise<void>((resolve, reject) => {
-        dialog.once(DialogEvent.ON_DISMISS, resolve)
-        dialog.once(DialogEvent.ON_POSITIVE, () => { dialog.dismiss() })
-    })
-}
+        return new Promise<void>((resolve, reject) => {
+            dialog.once(DialogEvent.ON_DISMISS, resolve)
+            dialog.once(DialogEvent.ON_POSITIVE, () => { dialog.dismiss() })
+        })
+    }
 /**
  * 显示一个确认对话框
  * @param title 
  * @param options 
  * @returns 只在点击positive按钮时返回true,其他情况返回false
  */
-export async function showConfirmDialog(title: string, options?: DialogBuilderOptions) {
+export const showConfirmDialog: IDialogs['showConfirmDialog'] = async function (title: string, options?: DialogBuilderOptions) {
     const f: DialogBuilderOptions = {
         title: title,
         positive: '确认',
@@ -142,7 +146,7 @@ export async function showConfirmDialog(title: string, options?: DialogBuilderOp
  * @param options 
  * @returns 点击positive时返回字符串，即使输入为空，被取消时返回null
  */
-export async function showInputDialog(title: string, prefill?: string, options?: InputDialogOptions) {
+export const showInputDialog: IDialogs['showInputDialog'] = async function (title: string, prefill?: string, options?: InputDialogOptions) {
     let input = prefill || ""
     const DialogContent = defineComponent(function () {
         function updateInput(value: string) {
@@ -183,7 +187,7 @@ export async function showInputDialog(title: string, prefill?: string, options?:
  * @param options 
  * @returns 返回选中的项目索引，被取消则返回-1
  */
-export async function showSelectDialog(title: string, items: string[], options?: DialogBuilderOptions) {
+export const showSelectDialog: IDialogs['showSelectDialog'] = async function (title: string, items: string[], options?: DialogBuilderOptions) {
     let select = -1
     const DialogContent = defineComponent(function () {
         function click(i: number) {
@@ -222,7 +226,7 @@ export async function showSelectDialog(title: string, items: string[], options?:
  * @param options 
  * @returns 返回选中的项目索引数组，被取消则返回`null`
  */
-export async function showMultiChoiceDialog(title: string,
+export const showMultiChoiceDialog: IDialogs['showMultiChoiceDialog'] = async function (title: string,
     items: string[],
     initialSelectedIndices?: number[],
     options?: DialogBuilderOptions) {
@@ -283,7 +287,7 @@ export async function showMultiChoiceDialog(title: string,
  * @param options 
  * @returns 返回选中的项目索引，被取消则返回-1
  */
-export async function showSingleChoiceDialog(title: string,
+export const showSingleChoiceDialog: IDialogs['showSingleChoiceDialog'] = async function (title: string,
     items: string[],
     initialSelectedIndex?: number,
     options?: DialogBuilderOptions) {
@@ -326,4 +330,4 @@ export async function showSingleChoiceDialog(title: string,
     })
 }
 
-export { DialogFactory }
+export { DialogFactory, IDialogs }
