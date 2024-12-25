@@ -2,6 +2,10 @@ package com.stardust.notification
 
 import android.service.notification.StatusBarNotification
 import com.stardust.view.accessibility.NotificationListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
@@ -11,6 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 class NotificationListenerService : android.service.notification.NotificationListenerService() {
 
     private val mNotificationListeners = CopyOnWriteArrayList<NotificationListener>()
+    private val scope = CoroutineScope(Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
@@ -18,17 +23,16 @@ class NotificationListenerService : android.service.notification.NotificationLis
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification, rankingMap: RankingMap) {
-        onNotificationPosted(sbn)
-    }
-
-    override fun onNotificationPosted(sbn: StatusBarNotification) {
-        for (listener in mNotificationListeners) {
-            listener.onNotification(com.stardust.notification.Notification.create(
-                    sbn.notification, sbn.packageName))
+        if (mNotificationListeners.isEmpty()) return
+        scope.launch {
+            for (listener in mNotificationListeners) {
+                listener.onNotification(
+                    Notification.create(
+                        sbn.notification, sbn.packageName))
+            }
         }
     }
 
-    override fun onNotificationRemoved(sbn: StatusBarNotification) {}
 
     override fun onNotificationRemoved(sbn: StatusBarNotification, rankingMap: RankingMap) {}
 
@@ -43,6 +47,7 @@ class NotificationListenerService : android.service.notification.NotificationLis
 
     override fun onDestroy() {
         super.onDestroy()
+        scope.cancel()
         instance = null
     }
 

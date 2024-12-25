@@ -10,6 +10,7 @@ import com.stardust.autojs.IndependentScriptService
 import com.stardust.autojs.execution.ExecutionConfig
 import com.stardust.autojs.script.ScriptFile
 import com.stardust.autojs.script.ScriptSource
+import com.stardust.notification.NotificationListenerService
 import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
@@ -28,6 +29,7 @@ class ScriptBinder(service: IndependentScriptService, val scope: CoroutineScope)
                 Action.STOP_ALL_SCRIPT.id -> stopAllScript()
                 Action.REGISTER_GLOBAL_SCRIPT_LISTENER.id -> registerGlobalScriptListener(data)
                 Action.REGISTER_GLOBAL_CONSOLE_LISTENER.id -> registerGlobalConsoleListener(data)
+                Action.NOTIFICATION_LISTENER_SERVICE_STATUS.id -> notificationListenerServiceStatus(reply!!)
                 else -> Log.w(TAG, "unknown action id = $code")
             }
             Log.d(TAG, "action id = $code, complete")
@@ -91,6 +93,11 @@ class ScriptBinder(service: IndependentScriptService, val scope: CoroutineScope)
             .observeOn(Schedulers.single()).subscribe(listener::onPrintln)
     }
 
+    private fun notificationListenerServiceStatus(reply: Parcel) {
+        reply.writeNoException()
+        reply.writeInt(if (NotificationListenerService.instance != null) 1 else 0)
+    }
+
     enum class Action(val id: Int) {
         START(1),
         STOP(2),
@@ -100,6 +107,7 @@ class ScriptBinder(service: IndependentScriptService, val scope: CoroutineScope)
         STOP_ALL_SCRIPT(6),
         REGISTER_GLOBAL_SCRIPT_LISTENER(7),
         REGISTER_GLOBAL_CONSOLE_LISTENER(8),
+        NOTIFICATION_LISTENER_SERVICE_STATUS(9),
     }
 
     companion object {

@@ -96,6 +96,13 @@ class ScriptServiceConnection : ServiceConnection {
         send()
     }
 
+    suspend fun notificationListenerServiceStatus():Boolean  = sendBinder {
+        action = ScriptBinder.Action.NOTIFICATION_LISTENER_SERVICE_STATUS.id
+        send()
+        reply!!.readException()
+        reply.readInt() == 1
+    }
+
     suspend fun awaitConnected() = withTimeout(3000) {
         if (isConnected) return@withTimeout
         check(reBind != null) { "service is not connected" }

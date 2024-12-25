@@ -70,7 +70,7 @@ import com.stardust.app.permission.DrawOverlaysPermission.launchCanDrawOverlaysS
 import com.stardust.app.permission.PermissionsSettingsUtil
 import com.stardust.autojs.IndependentScriptService
 import com.stardust.autojs.core.pref.PrefKey
-import com.stardust.notification.NotificationListenerService
+import com.stardust.autojs.servicecomponents.ScriptServiceConnection
 import com.stardust.toast
 import com.stardust.util.ClipboardUtil
 import com.stardust.util.IntentUtil
@@ -81,6 +81,7 @@ import io.noties.markwon.Markwon
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.autojs.autojs.Pref
@@ -259,21 +260,29 @@ private fun StableModeSwitch() {
 
 @Composable
 private fun NotificationUsageRightSwitch() {
-    fun notificationListenerEnable(): Boolean = NotificationListenerService.instance != null
+    suspend fun notificationListenerEnable(): Boolean {
+        return ScriptServiceConnection.GlobalConnection.notificationListenerServiceStatus()
+    }
 
-    val isNotificationListenerEnable = remember {
-        mutableStateOf(notificationListenerEnable())
+    val scope = rememberCoroutineScope()
+
+    val isNotificationListenerEnable = remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(500)
+        isNotificationListenerEnable.value = notificationListenerEnable()
     }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
         onResult = {
-            isNotificationListenerEnable.value = notificationListenerEnable()
+            scope.launch { isNotificationListenerEnable.value = notificationListenerEnable() }
         }
     )
     Watch(isNotificationListenerEnable) {
-        if (isNotificationListenerEnable.value)
-            launcher.launch(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        scope.launch {
+            if (isNotificationListenerEnable.value != notificationListenerEnable())
+                launcher.launch(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
     }
 
     SettingOptionSwitch(

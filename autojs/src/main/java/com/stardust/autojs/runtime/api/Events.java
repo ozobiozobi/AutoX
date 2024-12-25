@@ -8,7 +8,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.provider.Settings;
 
-import androidx.annotation.RequiresApi;
+import androidx.annotation.NonNull;
 
 import android.view.KeyEvent;
 
@@ -227,9 +227,7 @@ public class Events extends EventEmitter implements OnKeyListener, TouchObserver
         ensureHandler();
         mLoopers.addAsyncTaskToCurrentThreadLooper(task);
         if (NotificationListenerService.Companion.getInstance() == null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                mContext.startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
-            }
+            mContext.startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             throw new ScriptException(mContext.getString(R.string.exception_notification_service_disabled));
         }
         NotificationListenerService.Companion.getInstance().addListener(this);
@@ -286,8 +284,7 @@ public class Events extends EventEmitter implements OnKeyListener, TouchObserver
         if (mListeningNotification) {
             mAccessibilityBridge.getNotificationObserver().removeNotificationListener(this);
             mAccessibilityBridge.getNotificationObserver().removeToastListener(this);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2
-                    && NotificationListenerService.Companion.getInstance() != null) {
+            if (NotificationListenerService.Companion.getInstance() != null) {
                 NotificationListenerService.Companion.getInstance().removeListener(this);
             }
         }
@@ -331,13 +328,13 @@ public class Events extends EventEmitter implements OnKeyListener, TouchObserver
         mHandler.post(() -> emit("touch", new Point(x, y)));
     }
 
-    public void onNotification(final Notification notification) {
+    public void onNotification(@NonNull final Notification notification) {
         mHandler.post(() -> emit("notification", notification));
 
     }
 
     @Override
-    public void onToast(final AccessibilityNotificationObserver.Toast toast) {
+    public void onToast(@NonNull final AccessibilityNotificationObserver.Toast toast) {
         mHandler.post(() -> emit("toast", toast));
     }
 

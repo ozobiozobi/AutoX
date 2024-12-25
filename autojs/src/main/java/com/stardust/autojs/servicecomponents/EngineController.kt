@@ -51,7 +51,6 @@ object EngineController {
         }
         return@lazy listeners
     }
-    private val globalConsoleListener = 1
 
     fun runScript(taskInfo: TaskInfo, listener: BinderScriptListener? = null) = scope.launch {
         try {

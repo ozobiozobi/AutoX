@@ -322,16 +322,6 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
-
-        <service
-            android:name="com.stardust.notification.NotificationListenerService"
-            android:exported="false"
-            android:label="${appName}"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
         <service
             android:name="org.autojs.autojs.ui.floating.FloatyService"
             android:process="@string/text_script_process_name" />
