@@ -12,6 +12,7 @@ android {
         minSdk = versions.mini
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("int", "MIN_SDK_VERSION", versions.mini.toString())
+        buildConfigField("int", "VERSION_CODE", versions.appVersionCode.toString())
     }
 
     buildTypes {
@@ -28,6 +29,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        aidl = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = compose_version
@@ -61,6 +63,8 @@ dependencies {
     implementation(libs.javet.android.node)
     api(libs.rxjava3.rxandroid)
     api(libs.eventbus)
+    api(libs.ktsh)
+    api(libs.bundles.shizuku)
     api("net.lingala.zip4j:zip4j:1.3.2")
     api("com.afollestad.material-dialogs:core:0.9.2.3")
     api(libs.material)

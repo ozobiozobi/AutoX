@@ -13,6 +13,7 @@ import com.stardust.autojs.runtime.api.AppUtils
 import com.stardust.autojs.runtime.api.Console
 import com.stardust.autojs.runtime.api.ConsoleExtension
 import com.stardust.autojs.runtime.api.Events
+import com.stardust.autojs.runtime.api.ScriptShell
 import com.stardust.autojs.runtime.api.Sensors
 import com.stardust.autojs.runtime.api.Threads
 import com.stardust.autojs.runtime.api.Timers
@@ -33,6 +34,7 @@ import java.io.StringWriter
 
 class ScriptRuntimeV2(val builder: Builder) : ScriptRuntime(builder) {
     lateinit var consoleExtension: ConsoleExtension
+    val shell = ScriptShell()
 
     override fun init() {
         check(loopers == null) { "already initialized" }
@@ -66,12 +68,6 @@ class ScriptRuntimeV2(val builder: Builder) : ScriptRuntime(builder) {
     }
 
     @ScriptInterface
-    fun getRootShell(): AbstractShell {
-        ensureRootShell()
-        return mRootShell
-    }
-
-    @ScriptInterface
     fun loadJar(path: String) {
         try {
             (ContextFactory.getGlobal().applicationClassLoader as AndroidClassLoader).loadJar(
@@ -93,16 +89,9 @@ class ScriptRuntimeV2(val builder: Builder) : ScriptRuntime(builder) {
         }
     }
 
-    private fun ensureRootShell() {
-        if (mRootShell == null) {
-            mRootShell = mShellSupplier.get()
-            mRootShell.SetScreenMetrics(mScreenMetrics)
-            mShellSupplier = null
-        }
-    }
-
     override fun onExit() {
         super.onExit()
+        shell.recycle(console)
         consoleExtension.close()
         ObjectWatcher.default.watch(this, engines.myEngine().toString() + "::" + TAG)
     }

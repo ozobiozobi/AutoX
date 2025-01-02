@@ -70,6 +70,7 @@ import com.stardust.app.permission.DrawOverlaysPermission.launchCanDrawOverlaysS
 import com.stardust.app.permission.PermissionsSettingsUtil
 import com.stardust.autojs.IndependentScriptService
 import com.stardust.autojs.core.pref.PrefKey
+import com.stardust.autojs.core.shizuku.ShizukuClient
 import com.stardust.autojs.servicecomponents.ScriptServiceConnection
 import com.stardust.toast
 import com.stardust.util.ClipboardUtil
@@ -127,6 +128,7 @@ fun DrawerPage() {
                 NotificationUsageRightSwitch()
                 ForegroundServiceSwitch()
                 UsageStatsPermissionSwitch()
+                ShizukuPermissionSwitch()
 
                 Text(text = stringResource(id = R.string.text_script_record), style = textStyle)
                 FloatingWindowSwitch()
@@ -255,6 +257,42 @@ private fun StableModeSwitch() {
         title = stringResource(id = R.string.text_stable_mode),
         content = stringResource(R.string.description_stable_mode),
         positiveText = stringResource(id = R.string.ok)
+    )
+}
+
+@Composable
+fun ShizukuPermissionSwitch() {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val enabled = ShizukuClient.instance.userPermission
+
+    SettingOptionSwitch(
+        checked = enabled,
+        title = "Shizuku权限",
+        icon = {
+            Icon(
+                painter = painterResource(R.drawable.ic_ac_unit_black_48dp),
+                contentDescription = null,
+                tint = Color(0xFF153B9B)
+            )
+        },
+        onCheckedChange = {
+            if (it) {
+                try {
+                    ShizukuClient.requestPermission()
+                } catch (e: Exception) {
+                    toast(context, "Shizuku未安装或未激活")
+                }
+            } else {
+                val intent =
+                    context.packageManager.getLaunchIntentForPackage(ShizukuClient.SHIZUKU_PACKAGE_NAME)
+                if (intent != null) {
+                    toast(context, "请在Shizuku中关闭权限")
+                    context.startActivity(intent)
+                }
+            }
+        }
     )
 }
 

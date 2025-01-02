@@ -31,6 +31,7 @@ import org.autojs.autojs.timing.TimedTaskScheduler
 import org.autojs.autojs.ui.main.MainActivity
 import org.autojs.autoxjs.BuildConfig
 import org.autojs.autoxjs.R
+import rikka.shizuku.ShizukuProvider
 import java.lang.ref.WeakReference
 
 /**
@@ -40,6 +41,10 @@ import java.lang.ref.WeakReference
 class App : Application(), Configuration.Provider {
     lateinit var dynamicBroadcastReceivers: DynamicBroadcastReceivers
         private set
+
+    init {
+        ShizukuProvider.enableMultiProcessSupport(false)
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -77,6 +82,7 @@ class App : Application(), Configuration.Provider {
                 WebView.setDataDirectorySuffix(getString(R.string.text_script_process_name))
             };
         } else {
+            ShizukuProvider.requestBinderForNonProviderProcess(this)
             ScriptServiceConnection.start(this)
             initResource()
         }

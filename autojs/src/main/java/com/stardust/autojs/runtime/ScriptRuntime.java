@@ -153,8 +153,6 @@ public abstract class ScriptRuntime {
 
     private static WeakReference<Context> applicationContext;
     private Map<String, Object> mProperties = new ConcurrentHashMap<>();
-    protected AbstractShell mRootShell;
-    protected Supplier<AbstractShell> mShellSupplier;
     protected ScreenMetrics mScreenMetrics = new ScreenMetrics();
     protected Thread mThread;
     protected TopLevelScope mTopLevelScope;
@@ -165,7 +163,6 @@ public abstract class ScriptRuntime {
         app = builder.getAppUtils();
         console = builder.getConsole();
         accessibilityBridge = builder.getAccessibilityBridge();
-        mShellSupplier = builder.getShellSupplier();
         ui = new UI(context, this);
         this.automator = new SimpleActionAutomator(accessibilityBridge, this);
         automator.setScreenMetrics(mScreenMetrics);
@@ -218,10 +215,6 @@ public abstract class ScriptRuntime {
         } catch (InterruptedException e) {
             throw new ScriptInterruptedException();
         }
-    }
-
-    public AbstractShell.Result shell(String cmd, int root) {
-        return ProcessShell.execCommand(cmd, root != 0);
     }
 
     public UiSelector selector() {
@@ -299,11 +292,6 @@ public abstract class ScriptRuntime {
         ignoresException(events::recycle);
         ignoresException(media::recycle);
         ignoresException(loopers::recycle);
-        ignoresException(() -> {
-            if (mRootShell != null) mRootShell.exit();
-            mRootShell = null;
-            mShellSupplier = null;
-        });
         ignoresException(images::releaseScreenCapturer);
         ignoresException(sensors::unregisterAll);
         ignoresException(timers::recycle);

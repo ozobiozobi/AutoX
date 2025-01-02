@@ -3,6 +3,9 @@ autoxjs 整个项目的一些更新日志,双版本号为稳定版（内容以�
 
 ## [Unreleased](https://github.com/kkevsekk1/AutoX/compare/7.0.5...HEAD) 未发布
 
+* 更换shell核心为Ktsh,移除runtime.getRootShell()
+* 新增shizuku函数
+
 ## [7.1.0] - 2025-1-8
 
 * 升级rhino至1.7.15
