@@ -20,6 +20,14 @@ open class AndroidContextFactory(private val cacheDirectory: File) : ContextFact
     companion object {
         const val LOG_TAG = "ContextFactory"
         val bridges = ScriptBridges()
+
+        init {
+            /*
+              一个神奇的bug，若去掉下面这行，则无法执行脚本，原因在运行脚本时访问Context.emptyArgs将得到null
+              只有在较早的类加载阶段访问一次该属性才能正常
+             */
+            Log.d(LOG_TAG, "init emptyArgs ${Context.emptyArgs}")
+        }
     }
 
     private val mContextCount = AtomicInteger()
@@ -69,6 +77,13 @@ open class AndroidContextFactory(private val cacheDirectory: File) : ContextFact
         super.onContextReleased(cx)
         val i = mContextCount.decrementAndGet()
         Log.d(LOG_TAG, "onContextReleased: count = $i")
+    }
+
+    override fun hasFeature(cx: Context?, featureIndex: Int): Boolean {
+        when (featureIndex) {
+            Context.FEATURE_ENABLE_XML_SECURE_PARSING -> return false
+        }
+        return super.hasFeature(cx, featureIndex)
     }
 
     open class WrapFactory : org.mozilla.javascript.WrapFactory() {

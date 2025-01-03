@@ -82,8 +82,9 @@ dependencies {
     api(project(path = ":LocalRepo:p7zip"))
     api(project(path = ":LocalRepo:OpenCV"))
     api(project(":paddleocr"))
+    api(libs.mozilla.rhino)
     // libs
-    api(fileTree("./libs") { include("dx.jar", "d8.jar", "rhino-1.7.14-jdk7.jar") })
+    api(fileTree("./libs") { include("dx.jar") })
     implementation("cz.adaptech:tesseract4android:4.1.1")
     implementation(libs.bundles.mlkit)
 }
