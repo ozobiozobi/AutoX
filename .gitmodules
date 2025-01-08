@@ -1,6 +1,3 @@
 [submodule "docs/v2"]
 	path = docs/v2
 	url = git@github.com:aiselp/AutoxDoc.git
-[submodule "docs/v1"]
-	path = docs/v1
-	url = git@github.com:kkevsekk1/kkevsekk1.github.io.git
