@@ -89,3 +89,4 @@ jobs:
           cd autojs/src/js-api/dist
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
           npm publish
+        continue-on-error: true

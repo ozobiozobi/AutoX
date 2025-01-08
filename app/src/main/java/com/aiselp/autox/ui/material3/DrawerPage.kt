@@ -97,9 +97,9 @@ import org.joda.time.Instant
 
 private const val TAG = "DrawerPage"
 private const val URL_DEV_PLUGIN = "https://github.com/kkevsekk1/Auto.js-VSCode-Extension"
-private const val PROJECT_ADDRESS = "https://github.com/kkevsekk1/AutoX"
-private const val DOWNLOAD_ADDRESS = "https://github.com/kkevsekk1/AutoX/releases"
-private const val FEEDBACK_ADDRESS = "https://github.com/kkevsekk1/AutoX/issues"
+private const val PROJECT_ADDRESS = "https://github.com/aiselp/AutoX"
+private const val DOWNLOAD_ADDRESS = "https://github.com/aiselp/AutoX/releases"
+private const val FEEDBACK_ADDRESS = "https://github.com/aiselp/AutoX/issues"
 
 
 @Composable
