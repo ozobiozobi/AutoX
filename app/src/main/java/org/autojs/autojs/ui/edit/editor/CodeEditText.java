@@ -294,10 +294,6 @@ public class CodeEditText extends AppCompatEditText {
             }catch(Exception e){
                 Log.e(LOG_TAG,e.toString());
             }//<
-            // canvas.drawText(text, previousColorPos, visibleCharEnd, paddingLeft + offsetX, lineBaseline, paint);
-            // if (DEBUG) {
-            //     mLogger.addSplit("draw line " + line + " (" + (visibleCharEnd - visibleCharStart) + ") ");
-            // }
             lineNumberPrevious = lineNumber;
         }
     }
