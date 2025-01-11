@@ -285,10 +285,19 @@ public class CodeEditText extends AppCompatEditText {
                 //postInvalidate();
                 return;
             }
-            canvas.drawText(text, previousColorPos, visibleCharEnd, paddingLeft + offsetX, lineBaseline, paint);
-            if (DEBUG) {
-                mLogger.addSplit("draw line " + line + " (" + (visibleCharEnd - visibleCharStart) + ") ");
-            }
+            // Modified by ozobi - 2025/01/12 > 修复长按删除崩溃
+            try{
+                canvas.drawText(text, previousColorPos, visibleCharEnd, paddingLeft + offsetX, lineBaseline, paint);
+                if (DEBUG) {
+                    mLogger.addSplit("draw line " + line + " (" + (visibleCharEnd - visibleCharStart) + ") ");
+                }
+            }catch(Exception e){
+                Log.e(LOG_TAG,e.toString());
+            }//<
+            // canvas.drawText(text, previousColorPos, visibleCharEnd, paddingLeft + offsetX, lineBaseline, paint);
+            // if (DEBUG) {
+            //     mLogger.addSplit("draw line " + line + " (" + (visibleCharEnd - visibleCharStart) + ") ");
+            // }
             lineNumberPrevious = lineNumber;
         }
     }
