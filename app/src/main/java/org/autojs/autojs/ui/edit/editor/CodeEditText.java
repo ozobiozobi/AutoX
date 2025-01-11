@@ -285,7 +285,7 @@ public class CodeEditText extends AppCompatEditText {
                 //postInvalidate();
                 return;
             }
-            // Modified by ozobi - 2025/01/12 > 修复长按删除崩溃
+            // > 修复长按删除崩溃
             try{
                 canvas.drawText(text, previousColorPos, visibleCharEnd, paddingLeft + offsetX, lineBaseline, paint);
                 if (DEBUG) {
