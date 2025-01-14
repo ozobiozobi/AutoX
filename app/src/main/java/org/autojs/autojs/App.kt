@@ -81,7 +81,7 @@ class App : Application(), Configuration.Provider {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 WebView.setDataDirectorySuffix(getString(R.string.text_script_process_name))
             };
-        } else {
+        } else if (ProcessUtils.isMainProcess(this)) {
             ShizukuProvider.requestBinderForNonProviderProcess(this)
             ScriptServiceConnection.start(this)
             initResource()

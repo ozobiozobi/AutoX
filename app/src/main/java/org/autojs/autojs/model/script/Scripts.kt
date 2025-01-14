@@ -10,7 +10,11 @@ import com.stardust.autojs.execution.ScriptExecution
 import com.stardust.autojs.execution.ScriptExecutionListener
 import com.stardust.autojs.runtime.exception.ScriptInterruptedException
 import com.stardust.autojs.script.ScriptSource
+import com.stardust.autojs.servicecomponents.EngineController
+import com.stardust.toast
 import com.stardust.util.IntentUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.autojs.autojs.Pref
 import org.autojs.autojs.autojs.AutoJs
 import org.autojs.autojs.external.ScriptIntents
@@ -127,7 +131,9 @@ object Scripts {
             )
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(GlobalAppContext.get(), e.message, Toast.LENGTH_LONG).show()
+            EngineController.scope.launch(Dispatchers.Main) {
+                toast(GlobalAppContext.get(), e.message)
+            }
             null
         }
 
