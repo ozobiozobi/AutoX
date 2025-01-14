@@ -52,6 +52,9 @@ class ScriptShell {
         return@runBlocking Shell2.fromResultJson(r)
     }
 
+    @ScriptInterface
+    fun isShizukuAlive(): Boolean = ShizukuClient.instance.shizukuConnection.service != null
+
     fun recycle(console: Console) {
         suShell?.exit()
         shShell?.exit()
@@ -67,9 +70,7 @@ class ScriptShell {
             console.warn("$num shell not recovered")
         }
         if (shizukuShellCreate) {
-            runBlocking {
-                ShizukuClient.instance.ensureShizukuService().recycleShell(id)
-            }
+            ShizukuClient.instance.shizukuConnection.service?.recycleShell(id)
         }
     }
 

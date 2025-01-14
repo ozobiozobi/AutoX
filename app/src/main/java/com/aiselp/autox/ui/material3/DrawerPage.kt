@@ -265,7 +265,7 @@ fun ShizukuPermissionSwitch() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val enabled = ShizukuClient.instance.userPermission
+    val enabled = ShizukuClient.instance.available && ShizukuClient.instance.userPermission
 
     SettingOptionSwitch(
         checked = enabled,

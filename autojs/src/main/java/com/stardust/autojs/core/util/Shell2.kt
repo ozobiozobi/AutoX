@@ -5,6 +5,8 @@ import android.util.Log
 import com.google.gson.Gson
 import com.stardust.autojs.annotation.ScriptInterface
 import com.stardust.autojs.runtime.api.AbstractShell
+import com.stardust.autojs.runtime.exception.UIBlockingException
+import com.stardust.autojs.util.isUiThread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -51,6 +53,9 @@ class Shell2(initCommand: String) : Closeable {
 
     @ScriptInterface
     fun execAndWaitFor(cmd: String): AbstractShell.Result = runBlocking {
+        if (isUiThread()) {
+            throw UIBlockingException()
+        }
         val r = scope.async { sh.run(cmd) }.await()
         AbstractShell.Result().apply {
             code = r.exitCode
@@ -104,7 +109,8 @@ class Shell2(initCommand: String) : Closeable {
     companion object {
         private const val PidSuffix = "-pid------00eaweesd"
         private const val TAG = "Shell2"
-        fun fromResultJson(json: String): AbstractShell.Result = Gson().fromJson(json, AbstractShell.Result::class.java)
+        fun fromResultJson(json: String): AbstractShell.Result =
+            Gson().fromJson(json, AbstractShell.Result::class.java)
     }
 }
 
