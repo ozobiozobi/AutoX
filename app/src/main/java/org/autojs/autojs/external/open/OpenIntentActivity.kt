@@ -1,24 +1,41 @@
 package org.autojs.autojs.external.open
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.InputType
-import android.widget.EditText
-import android.widget.Toast
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.stardust.autojs.script.StringScriptSource
+import android.util.Log
+import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.aiselp.autox.ui.material3.components.BaseDialog
+import com.aiselp.autox.ui.material3.components.DialogController
+import com.aiselp.autox.ui.material3.components.DialogTitle
+import com.aiselp.autox.ui.material3.theme.AppTheme
 import com.stardust.autojs.servicecomponents.EngineController
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
+import com.stardust.toast
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.autojs.autojs.Pref
-import org.autojs.autojs.model.script.Scripts
-import org.autojs.autojs.ui.BaseActivity
 import org.autojs.autojs.ui.edit.EditActivity
 import org.autojs.autojs.ui.log.LogActivityKt
 import org.autojs.autoxjs.R
@@ -27,152 +44,143 @@ import java.io.File
 /**
  * Created by Stardust on 2017/2/2.
  */
-class OpenIntentActivity : BaseActivity() {
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
-    private lateinit var menus: Map<String, (file: Uri) -> Job?>
+class OpenIntentActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        menus = mapOf(
+
+        val menuDialog = DialogController(initShow = true)
+        val importFileDialog = DialogController()
+        val menus = mapOf(
             getString(R.string.text_edit_script) to ::editFile,
             getString(R.string.text_edit_script) + "(新编辑器)" to ::editFile2,
-            getString(R.string.text_import_script) to ::importFile,
+            getString(R.string.text_import_script) to { importFileDialog.show() },
             getString(R.string.text_run_script) to ::runFile,
         )
-        onNewIntent(intent)
-    }
-
-    private suspend fun showMenu(intent: Intent) {
         val uri = intent.data ?: return finish()
         val fileName = File(uri.path!!).name
-        val items = menus.keys.toTypedArray()
-        val item = CompletableDeferred<String>()
-        MaterialAlertDialogBuilder(this)
-            .setTitle(fileName)
-            .setItems(items) { dialog, which ->
-                dialog.dismiss()
-                item.complete(items[which])
+        setContent {
+            val scope = rememberCoroutineScope()
+            AppTheme {
+                importFileDialog.ImportFileDialog(uri = uri)
+                menuDialog.BaseDialog(onDismissRequest = {
+                    menuDialog.dismiss();finish()
+                }, title = { DialogTitle(title = fileName) }
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        val modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                        for ((text, action) in menus) {
+                            Row(modifier.clickable {
+                                scope.launch { menuDialog.dismiss() }
+                                action(uri)
+                            }, verticalAlignment = Alignment.CenterVertically) {
+                                Text(text = text)
+                            }
+                        }
+                    }
+                }
             }
-            .setOnDismissListener { item.cancel("canceled") }
-            .show()
-        menus[item.await()]?.invoke(uri)?.join()
+        }
+
     }
 
-    private fun editFile(file: Uri): Job {
+    private fun editFile(file: Uri) {
         val path = file.path!!
-        val job = Job()
-        job.complete()
         if (file.scheme == "file" && File(path).isFile()) {
             EditActivity.editFile(this, path, false)
         } else {
             EditActivity.editFile(this, file, false)
         }
-        return job
+        finish()
     }
 
-    private fun editFile2(file: Uri): Job? {
+    private fun editFile2(file: Uri) {
         val path = file.path!!
         if (file.scheme == "file" && File(path).isFile()) {
             com.aiselp.autojs.codeeditor.EditActivity.editFile(this, File(path))
-            return Job().apply { complete() }
-        }
-        showToast(R.string.edit_and_run_handle_intent_error)
-        return null
+        } else
+            toast(context = this, R.string.edit_and_run_handle_intent_error)
+        finish()
     }
 
-    private fun importFile(file: Uri): Job {
-        val fileName = File(file.path!!).name
+    @Composable
+    private fun DialogController.ImportFileDialog(uri: Uri) {
+        val scope = rememberCoroutineScope()
+        val context = LocalContext.current
         val scriptDirPath = Pref.getScriptDirPath()
-        val job = Job()
-        val editText = EditText(this).apply {
-            setInputType(InputType.TYPE_CLASS_TEXT)
-            setHint("请输入文件名")
-            setText(fileName)
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.text_name)
-            .setView(editText)
-            .setPositiveButton(R.string.ok) { _, _ ->
-                coroutineScope.launch {
-                    runCatching {
-                        withContext(Dispatchers.IO) {
-                            val newFile = File(scriptDirPath, editText.text.toString())
-                            check(!newFile.exists()) { getString(R.string.text_file_exists) }
-                            when (file.scheme) {
-                                "file" -> {
-                                    File(file.path!!).copyTo(newFile, overwrite = false)
-                                }
+        var fileName by remember { mutableStateOf(File(uri.path!!).name) }
+        fun onPositiveClick() = scope.launch(Dispatchers.IO) {
+            runCatching {
+                val newFile = File(scriptDirPath, fileName)
+                check(!newFile.exists()) { getString(R.string.text_file_exists) }
+                when (uri.scheme) {
+                    "file" -> {
+                        File(uri.path!!).copyTo(newFile, overwrite = false)
+                    }
 
-                                "content" -> {
-                                    this@OpenIntentActivity.contentResolver.openInputStream(file)
-                                        .use {
-                                            check(it != null) { "importFile failed" }
-                                            newFile.outputStream().use { out ->
-                                                it.copyTo(out)
-                                            }
-                                        }
-                                }
-
-                                else -> {
-                                    cancel(getString(R.string.edit_and_run_handle_intent_error))
+                    "content" -> {
+                        context.contentResolver.openInputStream(uri)
+                            .use {
+                                check(it != null) { "importFile failed" }
+                                newFile.outputStream().use { out ->
+                                    it.copyTo(out)
                                 }
                             }
-                        }
-                    }.onSuccess {
-                        job.complete()
-                        showToast(R.string.text_import_succeed)
-                    }.onFailure {
-                        showToast(it.message ?: "unknown error")
+                    }
+
+                    else -> {
+                        cancel(getString(R.string.edit_and_run_handle_intent_error))
                     }
                 }
-            }
-            .setOnDismissListener { job.cancel("canceled") }
-            .show()
-        return job
-    }
-
-    private fun runFile(file: Uri) = coroutineScope.launch {
-        when (file.scheme) {
-            "file" -> {
-                EngineController.runScript(File(file.path!!))
-            }
-
-            "content" -> withContext(Dispatchers.IO) {
-                this@OpenIntentActivity.contentResolver.openInputStream(file)
-                    .use {
-                        check(it != null) { "runFile failed" }
-                        it.bufferedReader().readText()
-                    }.let { Scripts.run(StringScriptSource(it)) }
-            }
-
-            else -> throw IllegalArgumentException("unknown scheme: ${file.scheme}")
-        }
-        LogActivityKt.start(this@OpenIntentActivity)
-    }
-
-    private fun showToast(msg: String) {
-        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
-    }
-
-    private fun showToast(resId: Int) {
-        Toast.makeText(this, resId, Toast.LENGTH_LONG).show()
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        coroutineScope.launch {
-            runCatching {
-                showMenu(intent)
+            }.onSuccess {
+                scope.launch { toast(context, R.string.text_import_succeed) }
             }.onFailure {
-                it.printStackTrace()
-                showToast(R.string.edit_and_run_handle_intent_error)
+                scope.launch { toast(context = context, it.message ?: "unknown error") }
             }
             finish()
         }
+
+        BaseDialog(onDismissRequest = { scope.launch { dismiss();finish() } }, title = {
+            DialogTitle(title = stringResource(R.string.text_name))
+        }, positiveText = stringResource(R.string.ok), onPositiveClick = {
+            onPositiveClick()
+        }) {
+            TextField(
+                value = fileName, onValueChange = { fileName = it },
+                singleLine = true
+            )
+        }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        coroutineScope.cancel()
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun runFile(file: Uri) {
+        GlobalScope.launch(Dispatchers.Main) {
+            Log.d("OpenIntentActivity", "runFile: $file")
+            when (file.scheme) {
+                "file" -> {
+                    EngineController.runScript(File(file.path!!))
+                }
+
+                "content" -> withContext(Dispatchers.IO) {
+                    val name = File(file.path!!).name
+                    val script = File(cacheDir, "script-cache/$name")
+                    script.parentFile?.mkdirs()
+                    this@OpenIntentActivity.contentResolver.openInputStream(file)
+                        .use {
+                            check(it != null) { "runFile failed" }
+                            script.outputStream().use { out ->
+                                it.copyTo(out)
+                            }
+                        }
+                    EngineController.runScript(script)
+                }
+
+                else -> throw IllegalArgumentException("unknown scheme: ${file.scheme}")
+            }
+            LogActivityKt.start(this@OpenIntentActivity)
+            finish()
+        }
     }
 
 }

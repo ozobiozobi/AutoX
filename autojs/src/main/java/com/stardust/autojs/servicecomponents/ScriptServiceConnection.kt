@@ -103,6 +103,11 @@ class ScriptServiceConnection : ServiceConnection {
         reply.readInt() == 1
     }
 
+    suspend fun bindShizukuUserService() = sendBinder {
+        action = ScriptBinder.Action.BIND_SHIZUKU_SERVICE.id
+        send()
+    }
+
     suspend fun awaitConnected() = withTimeout(3000) {
         if (isConnected) return@withTimeout
         check(reBind != null) { "service is not connected" }

@@ -54,6 +54,7 @@ runtime.init();
 
     global.process = require('process')
     global.Promise = require('bluebird');
+    global.shizuku = require('shizuku');
 
 
     //初始化全局函数
@@ -75,7 +76,6 @@ runtime.init();
     })(global);
 
     importClass(android.view.KeyEvent);
-    importClass(com.stardust.autojs.core.util.Shell);
     importClass(android.graphics.Paint);
     Canvas = com.stardust.autojs.core.graphics.ScriptCanvas;
     Image = com.stardust.autojs.core.image.ImageWrapper;

@@ -2,7 +2,6 @@ package com.aiselp.autox.apkbuilder
 
 import android.content.Context
 import org.apache.commons.exec.CommandLine
-import org.apache.commons.exec.DefaultExecuteResultHandler
 import org.apache.commons.exec.DefaultExecutor
 import java.io.File
 
@@ -27,7 +26,6 @@ object AAPT_Util {
         val line = CommandLine(aapt2LibPath).apply {
             addArguments(args.toTypedArray())
         }
-        DefaultExecuteResultHandler();
         executor.execute(line)
     }
 }

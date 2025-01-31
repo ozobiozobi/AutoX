@@ -3,27 +3,27 @@
 module.exports = function(__runtime__, scope){
 
     scope.SetScreenMetrics = function(w, h){
-        __runtime__.getRootShell().SetScreenMetrics(w, h);
+//        __runtime__.getRootShell().SetScreenMetrics(w, h);
     }
 
     scope.Tap = function(x, y){
-        __runtime__.getRootShell().Tap(x, y);
+        __runtime__.shell.exec(`input tap ${x} ${y}`, true);
     }
 
     scope.Swipe = function(x1, y1, x2, y2, duration){
         if(arguments.length == 5){
-            __runtime__.getRootShell().Swipe(x1, y1, x2, y2, duration);
+            __runtime__.shell.exec(`input swipe ${x1} ${y1} ${x2} ${y2} ${duration}`, true);
         }else{
-            __runtime__.getRootShell().Swipe(x1, y1, x2, y2);
+            __runtime__.shell.exec(`input swipe ${x1} ${y1} ${x2} ${y2}`, true);
         }
     }
 
     scope.Screencap = function(path){
-         __runtime__.getRootShell().Screencap(path);
+         __runtime__.shell.exec(`screencap -p '${path}'`, true);
     }
 
     scope.KeyCode = function(keyCode){
-        __runtime__.getRootShell().KeyCode(keyCode);
+        __runtime__.shell.exec("input keyevent " + keyCode, true);
     }
 
     scope.Home = function(){
@@ -75,13 +75,16 @@ module.exports = function(__runtime__, scope){
     }
 
     scope.Text = function(text){
-         __runtime__.getRootShell().Text(text);
+         __runtime__.shell.exec(`input text '${text}'`, true);
     }
 
     scope.Input = scope.Text;
 
+    scope.Shell = function (root){
+        return __runtime__.shell.createShell(!!root);
+    }
+
     return function(cmd, root){
-       root = root ? 1 : 0;
-       return __runtime__.shell(cmd, root);
+       return __runtime__.shell.exec(cmd, !!root);
    };
 }

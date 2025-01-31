@@ -16,6 +16,7 @@ import com.stardust.autojs.core.console.GlobalConsole
 import com.stardust.autojs.core.image.capture.ScreenCaptureManager
 import com.stardust.autojs.core.image.capture.ScreenCaptureRequester
 import com.stardust.autojs.core.record.accessibility.AccessibilityActionRecorder
+import com.stardust.autojs.core.shizuku.ShizukuClient
 import com.stardust.autojs.core.util.Shell
 import com.stardust.autojs.engine.LoopBasedJavaScriptEngine
 import com.stardust.autojs.engine.RootAutomatorEngine
@@ -64,6 +65,7 @@ abstract class AutoJs protected constructor(protected val application: Applicati
         ObjectWatcher.init(application)
         ScreenMetrics.initIfNeeded(application)
         MlKit.initialize(application)
+        ShizukuClient.instance.setupService(application.packageName)
         scriptEngineService = buildScriptEngineService()
         ScriptEngineService.instance = scriptEngineService
         addAccessibilityServiceDelegates()

@@ -421,6 +421,8 @@
     <string name="text_project_location">项目位置</string>
     <string name="text_new_project">新建项目</string>
     <string name="text_js_file">js文件</string>
+    <string name="text_mjs_file">mjs文件</string>
+    <string name="text_file_name_cannot_be_empty">文件名称不能为空</string>
     <string name="text_invalid_project">无效项目</string>
     <string name="text_invalid_project_config">没有配置文件</string>
     <string name="text_foreground_service">前台服务</string>

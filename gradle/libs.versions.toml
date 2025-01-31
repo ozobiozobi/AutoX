@@ -90,6 +90,11 @@ rxjava2-rxandroid = "io.reactivex.rxjava2:rxandroid:2.1.1"
 rxjava3 = "io.reactivex.rxjava3:rxjava:3.1.5"
 rxjava3-rxandroid = "io.reactivex.rxjava3:rxandroid:3.0.2"
 javet-android-node = "com.caoccao.javet:javet-android-node:3.1.4"
+#shizuku
+shizuku-api = "dev.rikka.shizuku:api:13.1.5"
+shizuku-provider = "dev.rikka.shizuku:provider:13.1.5"
+
+ktsh = "com.jaredrummler:ktsh:1.0.0"
 
 #test libraries ===================================
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -121,3 +126,4 @@ mlkit = [
     "mlkit-text-recognition-japanese",
     "mlkit-text-recognition-korean"
 ]
+shizuku = ["shizuku-api", "shizuku-provider"]

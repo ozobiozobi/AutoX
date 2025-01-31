@@ -19,9 +19,12 @@ import com.aiselp.autox.engine.NodeScriptEngine.Companion.initModuleResource
 import com.aiselp.autox.ui.material3.activity.ErrorReportActivity
 import com.stardust.app.GlobalAppContext
 import com.stardust.autojs.core.pref.PrefKey
+import com.stardust.autojs.servicecomponents.EngineController
 import com.stardust.autojs.servicecomponents.ScriptServiceConnection
 import com.stardust.autojs.util.ProcessUtils
 import com.stardust.theme.ThemeColor
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.autojs.autojs.autojs.AutoJs
 import org.autojs.autojs.autojs.key.GlobalKeyObserver
 import org.autojs.autojs.external.receiver.DynamicBroadcastReceivers
@@ -31,6 +34,7 @@ import org.autojs.autojs.timing.TimedTaskScheduler
 import org.autojs.autojs.ui.main.MainActivity
 import org.autojs.autoxjs.BuildConfig
 import org.autojs.autoxjs.R
+import rikka.shizuku.ShizukuProvider
 import java.lang.ref.WeakReference
 
 /**
@@ -40,6 +44,7 @@ import java.lang.ref.WeakReference
 class App : Application(), Configuration.Provider {
     lateinit var dynamicBroadcastReceivers: DynamicBroadcastReceivers
         private set
+
 
     override fun onCreate() {
         super.onCreate()
@@ -76,9 +81,13 @@ class App : Application(), Configuration.Provider {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 WebView.setDataDirectorySuffix(getString(R.string.text_script_process_name))
             };
-        } else {
+        } else if (ProcessUtils.isMainProcess(this)) {
             ScriptServiceConnection.start(this)
             initResource()
+            EngineController.scope.launch {
+                delay(1000)
+                ShizukuProvider.requestBinderForNonProviderProcess(this@App)
+            }
         }
         Log.i(
             TAG, "Pid: ${Process.myPid()}, isScriptProcess: ${ProcessUtils.isScriptProcess(this)}"
@@ -152,9 +161,12 @@ class App : Application(), Configuration.Provider {
 
     companion object {
         private const val TAG = "App"
-        private const val BUGLY_APP_ID = "19b3607b53"
 
         private lateinit var instance: WeakReference<App>
+
+        init {
+            ShizukuProvider.enableMultiProcessSupport(false)
+        }
 
         val app: App
             get() = instance.get()!!

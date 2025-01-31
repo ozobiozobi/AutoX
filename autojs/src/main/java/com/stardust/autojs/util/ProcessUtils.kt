@@ -31,4 +31,20 @@ object ProcessUtils {
         }
         return false
     }
+
+    fun isMainProcess(context: Context): Boolean {
+        val currentProcessName = getProcessName(context, android.os.Process.myPid())
+        val packageName = context.packageName
+        return currentProcessName != null && currentProcessName == packageName
+    }
+
+    private fun getProcessName(context: Context, pid: Int): String? {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        for (processInfo in am.runningAppProcesses) {
+            if (processInfo.pid == pid) {
+                return processInfo.processName
+            }
+        }
+        return null
+    }
 }
