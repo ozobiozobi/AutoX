@@ -287,7 +287,8 @@ public class RootAutomator implements Shell.Callback {
     @Override
     public void onInitialized() {
         String path = RootAutomatorEngine.getExecutablePath(mContext);
-        String deviceNameOrPath = RootAutomatorEngine.getDeviceNameOrPath(mContext, InputDevices.getTouchDeviceName());
+        // 修复: 输入设备名称存在空格时, RootAutomator 不生效
+        String deviceNameOrPath = "'" + RootAutomatorEngine.getDeviceNameOrPath(mContext, InputDevices.getTouchDeviceName()) + "'";
         Log.d(LOG_TAG, "deviceNameOrPath: " + deviceNameOrPath);
         mShell.exec("chmod 777 " + path);
         String command = String.format(Locale.getDefault(), "%s -d %s -sw %d -sh %d", path, deviceNameOrPath,
