@@ -9,7 +9,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- 使用情况访问权限 -->
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <!-- 查询软件包   -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
@@ -92,20 +93,33 @@
         <service
             android:name="com.stardust.notification.NotificationListenerService"
             android:exported="false"
-            android:process="@string/text_script_process_name"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:process="@string/text_script_process_name">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+        <service
+            android:name="com.stardust.autojs.core.keyboard.ScriptIME"
+            android:exported="false"
+            android:process="@string/text_script_process_name"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
+
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
-            android:multiprocess="false"
-            android:process="@string/text_script_process_name"
             android:enabled="true"
             android:exported="true"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
+            android:process="@string/text_script_process_name" />
     </application>
 
 </manifest>

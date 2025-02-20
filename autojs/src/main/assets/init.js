@@ -51,6 +51,7 @@ runtime.init();
     global.JSON = require('__json2__.js');
     global.util = global.$util = require('__util__.js');
     global.device = runtime.device;
+    global.keyboard = Object.create(runtime.keyboard);
 
     global.process = require('process')
     global.Promise = require('bluebird');

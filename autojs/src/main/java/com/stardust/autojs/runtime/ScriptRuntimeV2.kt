@@ -13,6 +13,7 @@ import com.stardust.autojs.runtime.api.AppUtils
 import com.stardust.autojs.runtime.api.Console
 import com.stardust.autojs.runtime.api.ConsoleExtension
 import com.stardust.autojs.runtime.api.Events
+import com.stardust.autojs.runtime.api.Keyboard
 import com.stardust.autojs.runtime.api.ScriptShell
 import com.stardust.autojs.runtime.api.Sensors
 import com.stardust.autojs.runtime.api.Threads
@@ -35,6 +36,7 @@ import java.io.StringWriter
 class ScriptRuntimeV2(val builder: Builder) : ScriptRuntime(builder) {
     lateinit var consoleExtension: ConsoleExtension
     val shell = ScriptShell()
+    val keyboard = Keyboard()
 
     override fun init() {
         check(loopers == null) { "already initialized" }
