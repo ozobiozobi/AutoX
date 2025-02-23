@@ -50,7 +50,7 @@ jobs:
           ./gradlew autojs:buildJsModule
           ./gradlew :inrt:assemble 
           ./gradlew :app:assembleRelease
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: apks(no signing)
           path: app/build/outputs/apk/v7/release/*.apk
