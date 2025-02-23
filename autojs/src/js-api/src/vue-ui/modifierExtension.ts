@@ -1,7 +1,7 @@
 const ui = Autox.ui
-
-const factoryCache = new Map<string, ModifierExtBuilder>()
-function loadFactory(key: string): ModifierExtBuilder {
+type ModifierExt = ui.ModifierExt
+const factoryCache = new Map<string, ui.ModifierExtBuilder>()
+function loadFactory(key: string): ui.ModifierExtBuilder {
     if (factoryCache.has(key)) {
         return factoryCache.get(key)!
     } else {

@@ -3,7 +3,7 @@ import { DialogType, DialogInterface } from "."
 import { Component, defineComponent, h, VNode, xml, PropType, shallowReactive } from "@/vue-ui"
 import { fillMaxWidth, heightIn, padding, verticalScroll, widthIn } from "@/vue-ui/modifierExtension"
 
-export type SecureTpye = TSecureTpye
+export type SecureTpye = dialogs.TSecureTpye
 /**
  * 创建对话框的一些通用选项
  */

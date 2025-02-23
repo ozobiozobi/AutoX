@@ -7,4 +7,5 @@ declare let Autox = {
     toast = toast,
     ui = ui,
     dialogs = dialogs,
+    engines = engines
 }

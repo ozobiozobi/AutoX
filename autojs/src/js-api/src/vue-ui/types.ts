@@ -17,7 +17,7 @@ export interface ActivityEventListener {
 
 export type FunctionComponent = (
     props?: Record<string, any>,
-    ...children: any[]) => ComposeElement
+    ...children: any[]) => ui.ComposeElement
 
 
 export enum PxNodeTypes {

@@ -5,6 +5,7 @@ import * as main from '.'
 import { DialogBuilderOptions, IDialogs, InputDialogOptions } from "./options"
 import { EventEmitter } from 'node:events'
 
+type DialogOps = dialogs.DialogOps
 type DialogStatus = DialogOps & {
     isShow: boolean
 }

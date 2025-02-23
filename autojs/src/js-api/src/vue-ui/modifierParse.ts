@@ -8,7 +8,7 @@ import { PxElement } from "./types"
 const ui = Autox.ui
 
 export function parseModifier(
-    modifierExt: ModifierExt[],
+    modifierExt: ui.ModifierExt[],
     el: PxElement
 ) {
     el.__xel.clearModifierExts()

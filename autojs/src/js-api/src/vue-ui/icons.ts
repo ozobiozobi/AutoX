@@ -1,4 +1,6 @@
 import { memoize } from 'lodash'
+
+export type ImageVector = ui.ImageVector
 export interface Icons {
     Call: ImageVector
     Add: ImageVector
