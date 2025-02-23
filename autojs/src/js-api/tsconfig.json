@@ -15,6 +15,6 @@
         "@/*": ["./src/*"]
       }
     } ,
-    "include":["src/**/*.ts","src/**/*.d.ts","autox-native.d.ts"]
+    "include":["src/**/*.ts","src/**/*.d.ts", "native-types/*.ts","autox-native.d.ts"]
   }
   

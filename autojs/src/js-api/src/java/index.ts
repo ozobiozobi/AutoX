@@ -41,7 +41,7 @@ export function invokeDefault<T>(javaobj: any,
  * @param className java全类名
  * @returns 
  */
-export function loadClass(className: string): JavaClass {
+export function loadClass(className: string): java.JavaClass {
     return java.loadClass(className)
 }
 /**
