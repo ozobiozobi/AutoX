@@ -7,7 +7,6 @@
 package com.stardust.autojs.rhino;
 
 import org.mozilla.javascript.Kit;
-import org.mozilla.javascript.ObjToIntMap;
 import org.mozilla.javascript.Token;
 
 import java.io.IOException;
@@ -1055,7 +1054,6 @@ public  class TokenStream {
 				if (result != Token.EOF) {
 					return result;
 				}
-				this.string = (String) allStrings.intern(str);
 				return Token.NAME;
 			}
 
@@ -1280,7 +1278,6 @@ public  class TokenStream {
 				}
 
 				String str = getStringFromBuffer();
-				this.string = (String) allStrings.intern(str);
 				return Token.STRING;
 			}
 
@@ -2276,7 +2273,6 @@ public  class TokenStream {
 
 	private char[] stringBuffer = new char[128];
 	private int stringBufferTop;
-	private ObjToIntMap allStrings = new ObjToIntMap(50);
 
 	// Room to backtrace from to < on failed match of the last - in <!--
 	private final int[] ungetBuffer = new int[3];

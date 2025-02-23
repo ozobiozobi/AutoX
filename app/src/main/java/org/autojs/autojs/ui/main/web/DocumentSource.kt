@@ -6,5 +6,5 @@ enum class DocumentSource(
     val isLocal: Boolean = false,
     val openUri: String? = null
 ) {
-    DOC_V2_LOCAL("本地文档v2", "docs/v2", true)
+    DOC_V2_LOCAL("本地文档v2", "docs/v2", true,"https://autox-doc.vercel.app/")
 }
