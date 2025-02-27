@@ -229,7 +229,17 @@
     <string name="text_jump_to_start">转到文件开始</string>
     <string name="text_jump_to_line_start">转到行首</string>
     <string name="text_jump_to_line_end">转到行尾</string>
-    <string name="text_exit_floating_window">退出悬浮窗</string>
+<!--    <string name="text_exit_floating_window">退出悬浮窗</string>-->
+    <string name="text_exit_floating_window">退出</string>
+    <string name="text_expand_all_hierarchy">展开</string>
+    <string name="text_spell_casting">施法</string>
+    <string name="text_gen_relation_success">真相已躺好在粘贴板</string>
+    <string name="text_nothing_happen">什么都没发生, 请勿对同一个节点施法</string>
+    <string name="text_please_tag_second_node">请标记第二个节点</string>
+    <string name="text_show_layout_bounds_window">边界</string>
+    <string name="text_not_allow_collapse">禁止折叠</string>
+    <string name="text_allow_collapse">允许折叠</string>
+
     <string name="text_select_save_path">保存到</string>
     <string name="text_cancel_download">取消下载</string>
     <string name="text_download">下载</string>
@@ -538,7 +548,7 @@
     <string name="text_invalid_config">无效的配置</string>
     <string name="text_abi">支持的ABI(使用逗号分隔)</string>
     <string name="text_save_project_to">项目保存至：%s</string>
-    <string name="text_hide_and_show">隐藏/显示</string>
+    <string name="text_hide_and_show">隐/显</string>
     <string name="text_browser_open">浏览器打开</string>
     <string name="text_do_nothing">不执行任何操作</string>
     <string name="text_copy_to_new_folder">复制原文件夹内容到新文件夹</string>

@@ -16,6 +16,7 @@ import android.widget.ListView
 import android.widget.TextView
 import com.stardust.util.ViewUtil
 import com.stardust.view.accessibility.NodeInfo
+import org.autojs.autojs.ui.floating.layoutinspector.LayoutHierarchyFloatyWindow.Companion.mSelectedNode
 import org.autojs.autojs.ui.widget.LevelBeamView
 import org.autojs.autoxjs.R
 import pl.openrnd.multilevellistview.*
@@ -80,6 +81,7 @@ open class LayoutHierarchyView : MultiLevelListView {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun init() {
+        LevelBeamView.selectedNode = mSelectedNode
         mAdapter = Adapter()
         setAdapter(mAdapter)
         nestType = NestType.MULTIPLE
@@ -119,7 +121,6 @@ open class LayoutHierarchyView : MultiLevelListView {
         } else {
             mClickedView!!.background = mOriginalBackground
         }
-        view.setBackgroundColor(mClickedColor)
         mClickedView = view
         invalidate()
     }
@@ -168,10 +169,69 @@ open class LayoutHierarchyView : MultiLevelListView {
     fun setSelectedNode(selectedNode: NodeInfo) {
         mInitiallyExpandedNodes.clear()
         val parents = Stack<NodeInfo?>()
+        LayoutHierarchyFloatyWindow.curSelectedNodeParents.clear()
         searchNodeParents(selectedNode, mRootNode, parents)
-        mClickedNodeInfo = parents.peek()
+        if(parents.isNotEmpty()){
+            mClickedNodeInfo = parents.peek()
+            LayoutHierarchyFloatyWindow.curSelectedNodeChildren = mClickedNodeInfo!!.getChildren()
+            LayoutHierarchyFloatyWindow.curSelectedNodeParents.clear()
+            getParentsList(mClickedNodeInfo, LayoutHierarchyFloatyWindow.curSelectedNodeParents)
+            LayoutHierarchyFloatyWindow.curSelectedNodeParents.removeAt(0)
+            LayoutHierarchyFloatyWindow.curSelectedBrotherList = getBrotherList(mClickedNodeInfo)
+        }
         mInitiallyExpandedNodes.addAll(parents)
         mAdapter!!.reloadData()
+    }
+
+    fun getParentsList(nodeInfo:NodeInfo?, nodeList:MutableList<NodeInfo?>){
+        if(nodeInfo == null){
+            return
+        }
+        nodeList.add(nodeInfo)
+        getParentsList(nodeInfo.parent, nodeList)
+    }
+    fun getBrotherList(nodeInfo:NodeInfo?):List<NodeInfo>?{
+        if(nodeInfo?.parent != null){
+            return nodeInfo.parent!!.getChildren()
+        }
+        return null
+    }
+
+    fun ozobiSetSelectedNode(selectedNode: NodeInfo){
+        mClickedNodeInfo = selectedNode
+        LayoutHierarchyFloatyWindow.curSelectedNodeChildren = mClickedNodeInfo!!.getChildren()
+        LayoutHierarchyFloatyWindow.curSelectedNodeParents.clear()
+        getParentsList(mClickedNodeInfo, LayoutHierarchyFloatyWindow.curSelectedNodeParents)
+        LayoutHierarchyFloatyWindow.curSelectedNodeParents.removeAt(0)
+        LayoutHierarchyFloatyWindow.curSelectedBrotherList = getBrotherList(mClickedNodeInfo)
+        LevelBeamView.selectedNode = mClickedNodeInfo
+        if(mInitiallyExpandedNodes.contains(mClickedNodeInfo)){
+            if(LayoutHierarchyFloatyWindow.canCollapse){
+                mInitiallyExpandedNodes.remove(mClickedNodeInfo)
+            }
+        }else{
+            mInitiallyExpandedNodes.add(mClickedNodeInfo)
+        }
+        mAdapter!!.reloadData()
+    }
+
+    fun expandChild(nodeInfo: NodeInfo?){
+        if(nodeInfo == null){
+            return
+        }
+        val children = nodeInfo.getChildren()
+        for(child in children){
+            mInitiallyExpandedNodes.add(child)
+            expandChild(child)
+        }
+    }
+
+    fun expand(){
+        expandChild(mClickedNodeInfo)
+        val parents = Stack<NodeInfo?>()
+        mClickedNodeInfo?.let { searchNodeParents(it, mRootNode, parents) }
+        mInitiallyExpandedNodes.addAll(parents)
+        mAdapter?.reloadData()
     }
 
     private fun searchNodeParents(
@@ -211,6 +271,10 @@ open class LayoutHierarchyView : MultiLevelListView {
         }
     }
 
+    fun reloadAdapterData(){
+        mAdapter?.reloadData()
+    }
+
     private inner class Adapter : MultiLevelListAdapter() {
         override fun getSubObjects(`object`: Any): List<*> {
             return (`object` as NodeInfo).getChildren()
@@ -242,17 +306,59 @@ open class LayoutHierarchyView : MultiLevelListView {
                 convertView2
             }
 
-            viewHolder.nameView.text = simplifyClassName(nodeInfo.className)
+            var textInfo = ""
+            var descInfo = ""
+            nodeInfo.desc?.let{
+                if(it.isNotEmpty()){
+                    descInfo += if(it.indexOf("\n") != -1){
+                        it.substring(0,it.indexOf("\n"))
+                    }else{
+                        it
+                    }
+                }
+            }
+            nodeInfo.text.let {
+                if(it.isNotEmpty()){
+                    textInfo += if(it.indexOf("\n") != -1){
+                        it.substring(0,it.indexOf("\n"))
+                    }else{
+                        it
+                    }
+                }
+            }
+            val shotClassName = simplifyClassName(nodeInfo.className)
+            viewHolder.nameView.text = shotClassName + "\n" +descInfo + "\n" + textInfo
+
             viewHolder.nodeInfo = nodeInfo
             if (viewHolder.infoView.visibility == VISIBLE) viewHolder.infoView.text =
                 getItemInfoDsc(itemInfo)
-            if (itemInfo.isExpandable && !isAlwaysExpanded) {
+            if (itemInfo.isExpandable) {
                 viewHolder.arrowView.visibility = VISIBLE
-                viewHolder.arrowView.setImageResource(if (itemInfo.isExpanded) R.drawable.arrow_up else R.drawable.arrow_down)
-            } else {
-                viewHolder.arrowView.visibility = GONE
+                viewHolder.arrowView.setImageResource(if (itemInfo.isExpanded) R.drawable.arrow_down else R.drawable.arrow_right)
+            }else{
+                viewHolder.arrowView.visibility = INVISIBLE
             }
-            viewHolder.levelBeamView.setLevel(itemInfo.level)
+            var isSelected = false
+            var isParent = false
+            var isChild = false
+            var isBrother = false
+            if(mSelectedNode == nodeInfo){
+                isSelected = true
+            }
+            LayoutHierarchyFloatyWindow.curSelectedNodeChildren?.let {
+                if(it.contains(nodeInfo)){
+                    isChild = true
+                }
+            }
+            if(mClickedNodeInfo != nodeInfo && LayoutHierarchyFloatyWindow.curSelectedNodeParents.contains(nodeInfo)){
+                isParent = true
+            }
+            LayoutHierarchyFloatyWindow.curSelectedBrotherList?.let {
+                if(it.contains(nodeInfo)){
+                    isBrother = true
+                }
+            }
+            viewHolder.levelBeamView.setAttr(itemInfo.level,nodeInfo.clickable,isSelected,isParent,isChild,isBrother)
             if (nodeInfo == mClickedNodeInfo) {
                 convertView1?.let { setClickedItem(it, nodeInfo) }
             }
