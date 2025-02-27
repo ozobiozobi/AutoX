@@ -94,7 +94,7 @@ open class LayoutHierarchyFloatyWindow(private val mRootNode: NodeInfo) : FullSc
         view.setViewTreeLifecycleOwner(lifecycleOwner)
         view.setViewTreeViewModelStoreOwner(viewModelStore)
         view.setViewTreeSavedStateRegistryOwner(lifecycleOwner)
-        view.requestFocus()
+
         return view
     }
 
