@@ -72,7 +72,7 @@ open class LayoutHierarchyFloatyWindow(private val mRootNode: NodeInfo) : FullSc
             isFocusableInTouchMode = true
             setOnKeyListener { view, i, event ->
                 if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-                    close()
+                    showLayoutBounds()
                     return@setOnKeyListener true
                 }
                 return@setOnKeyListener false
