@@ -11,14 +11,36 @@ import com.stardust.autojs.engine.RhinoJavaScriptEngine;
 import com.stardust.autojs.engine.ScriptEngine;
 import com.stardust.autojs.engine.ScriptEngineManager;
 
-import org.mozilla.javascript.*;
-import org.mozilla.javascript.debug.*;
-import org.mozilla.javascript.tools.debugger.*;
+import org.mozilla.javascript.Callable;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextAction;
+import org.mozilla.javascript.ContextFactory;
+import org.mozilla.javascript.ImporterTopLevel;
+import org.mozilla.javascript.Kit;
+import org.mozilla.javascript.NativeCall;
+import org.mozilla.javascript.ScriptRuntime;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.SecurityUtilities;
+import org.mozilla.javascript.Undefined;
+import org.mozilla.javascript.debug.DebugFrame;
+import org.mozilla.javascript.debug.DebuggableObject;
+import org.mozilla.javascript.debug.DebuggableScript;
 import org.mozilla.javascript.debug.Debugger;
+import org.mozilla.javascript.tools.debugger.ScopeProvider;
+import org.mozilla.javascript.tools.debugger.SourceProvider;
 
-import java.util.*;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Dim or Debugger Implementation for Rhino.
@@ -182,13 +204,6 @@ public class Dim {
     }
 
     /**
-     * Sets the ScopeProvider to be used.
-     */
-    public void setSourceProvider(final SourceProvider sourceProvider) {
-        this.sourceProvider = sourceProvider;
-    }
-
-    /**
      * Switches context to the stack frame with the given index.
      */
     public void contextSwitch(int frameIndex) {
@@ -200,20 +215,6 @@ public class Dim {
      */
     public void setBreakOnExceptions(boolean breakOnExceptions) {
         this.breakOnExceptions = breakOnExceptions;
-    }
-
-    /**
-     * Sets whether the debugger should break on function entering.
-     */
-    public void setBreakOnEnter(boolean breakOnEnter) {
-        this.breakOnEnter = breakOnEnter;
-    }
-
-    /**
-     * Sets whether the debugger should break on function return.
-     */
-    public void setBreakOnReturn(boolean breakOnReturn) {
-        this.breakOnReturn = breakOnReturn;
     }
 
     /**
@@ -469,7 +470,7 @@ public class Dim {
      */
     private static DebuggableScript[] getAllFunctions
     (DebuggableScript function) {
-        ObjArray functions = new ObjArray();
+        ArrayDeque<Object> functions = new ArrayDeque<>();
         collectFunctions_r(function, functions);
         DebuggableScript[] result = new DebuggableScript[functions.size()];
         functions.toArray(result);
@@ -480,7 +481,7 @@ public class Dim {
      * Helper function for {@link #getAllFunctions(DebuggableScript)}.
      */
     private static void collectFunctions_r(DebuggableScript function,
-                                           ObjArray array) {
+                                           ArrayDeque<Object> array) {
         array.add(function);
         for (int i = 0; i != function.getFunctionCount(); ++i) {
             collectFunctions_r(function.getFunction(i), array);
@@ -587,26 +588,6 @@ public class Dim {
     }
 
     /**
-     * Compiles the given script.
-     */
-    public void compileScript(String url, String text) {
-        DimIProxy action = new DimIProxy(IPROXY_COMPILE_SCRIPT);
-        action.url = url;
-        action.text = text;
-        action.withContext();
-    }
-
-    /**
-     * Evaluates the given script.
-     */
-    public void evalScript(final String url, final String text) {
-        DimIProxy action = new DimIProxy(IPROXY_EVAL_SCRIPT);
-        action.url = url;
-        action.text = text;
-        action.withContext();
-    }
-
-    /**
      * Converts the given script object to a string.
      */
     public String objectToString(Object object) {
@@ -635,16 +616,6 @@ public class Dim {
         action.id = id;
         action.withContext();
         return action.objectResult;
-    }
-
-    /**
-     * Returns an array of the property names on the given script object.
-     */
-    public Object[] getObjectIds(Object object) {
-        DimIProxy action = new DimIProxy(IPROXY_OBJECT_IDS);
-        action.object = object;
-        action.withContext();
-        return action.objectArrayResult;
     }
 
     /**
@@ -754,16 +725,6 @@ public class Dim {
             // too deep recursion of dispatchNextGuiEvent causes GUI lockout.
             // Note: it can make GUI unresponsive if long-running script
             // will be called on GUI thread while processing another interrupt
-            if (false) {
-                // Run event dispatch until gui sets a flag to exit the initial
-                // call to interrupted.
-                while (this.returnValue == -1) {
-                    try {
-                        callback.dispatchNextGuiEvent();
-                    } catch (InterruptedException exc) {
-                    }
-                }
-            }
             return;
         }
 
@@ -1074,7 +1035,7 @@ public class Dim {
         /**
          * The stack frames.
          */
-        private ObjArray frameStack = new ObjArray();
+        private ArrayList<Object> frameStack = new ArrayList<>();
 
         /**
          * Whether the debugger should break at the next line in this context.
@@ -1123,14 +1084,14 @@ public class Dim {
          * Pushes a stack frame on to the stack.
          */
         private void pushFrame(StackFrame frame) {
-            frameStack.push(frame);
+            frameStack.add(frame);
         }
 
         /**
          * Pops a stack frame from the stack.
          */
         private void popFrame() {
-            frameStack.pop();
+            frameStack.remove(frameStack.size() - 1);
         }
     }
 
@@ -1514,16 +1475,6 @@ public class Dim {
         public boolean breakableLine(int line) {
             return (line < this.breakableLines.length)
                     && this.breakableLines[line];
-        }
-
-        /**
-         * Returns whether there is a breakpoint set on the given line.
-         */
-        public boolean breakpoint(int line) {
-            if (!breakableLine(line)) {
-                throw new IllegalArgumentException(String.valueOf(line));
-            }
-            return line < this.breakpoints.length && this.breakpoints[line];
         }
 
         /**

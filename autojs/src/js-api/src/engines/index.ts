@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 const engines = Autox.engines
-
+type ScriptEngine = engines.ScriptEngine
+type ScriptExecution = engines.ScriptExecution
 export class ScriptEngineProxy extends EventEmitter {
     private engine: ScriptEngine
     get id(): number {

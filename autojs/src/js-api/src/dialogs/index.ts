@@ -10,7 +10,7 @@ import { padding, fillMaxWidth, height, heightIn, clickable } from '@/vue-ui/mod
 import DialogFactory from './DialogFactory'
 
 const dialogs = Autox.dialogs
-
+type DialogOps = dialogs.DialogOps
 export type DialogType = 'app' | 'overlay' | DialogFactory
 export const defaultDialogType: DialogType = 'app'
 
@@ -48,7 +48,7 @@ export interface DialogInterface extends EventEmitter<Record<DialogEvent, any[]>
 }
 class Dialog extends EventEmitter<Record<DialogEvent, any[]>>
     implements DialogInterface {
-    _nv?: AppDialogBuilder
+    _nv?: dialogs.AppDialogBuilder
     destroyed: boolean = false
     constructor() {
         super()

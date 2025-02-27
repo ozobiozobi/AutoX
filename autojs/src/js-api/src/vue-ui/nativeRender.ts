@@ -11,7 +11,7 @@ function createText(text: string) {
 function createElement(
     tag: string,
     props?: Record<string, any>,
-    ...children: any[]): ComposeElement {
+    ...children: any[]): ui.ComposeElement {
     props = props || {}
     if (typeof tag === 'function') {
         return (tag as FunctionComponent)(props, ...children)

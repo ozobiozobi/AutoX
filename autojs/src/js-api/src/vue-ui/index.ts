@@ -51,7 +51,7 @@ export function renderActivity(vnode: VNode, listener?: ActivityEventListener) {
     startUi(root.__xel, listener)
 }
 
-function startUi(element: ComposeElement, listener?: ActivityEventListener) {
+function startUi(element: ui.ComposeElement, listener?: ActivityEventListener) {
     let emit = null
     if (listener) {
         emit = (event: string, ...args: any[]) => {

@@ -5,6 +5,8 @@ import { createElement, insertElement, removeElement, setText } from './nativeRe
 
 export type DomRendererOptions = RendererOptions<PxNode, PxElement>
 let nodeId: number = 0
+type ComposeElement = ui.ComposeElement
+type ComposeTextNode = ui.ComposeTextNode
 
 export enum NodeOpTypes {
     CREATE = 'create',
