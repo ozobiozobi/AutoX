@@ -28,14 +28,14 @@
 
 ### 现在的Autox.js：
 
-* Autox.js文档： http://doc.autoxjs.com/
-* 开源地址  https://github.com/kkevsekk1/AutoX
+* Autox.js文档： https://autox-doc.vercel.app/
+* 开源地址： https://github.com/aiselp/AutoX/
 * pc端开发[VS Code 插件](https://marketplace.visualstudio.com/items?itemName=aaroncheng.auto-js-vsce-fixed)
 * 官方论坛： [www.autoxjs.com](http://www.autoxjs.com)
 * autoxjs[更新日志](CHANGELOG.md)
 
 ### Autox.js下载地址：
-[https://github.com/kkevsekk1/AutoX/releases](https://github.com/kkevsekk1/AutoX/releases)  
+[releases](https://github.com/aiselp/AutoX/releases)  
 如果下载过慢可以右键复制 Release Assets 中APK文件的链接地址，粘贴到 [http://toolwa.com/github/](http://toolwa.com/github/) 等github加速网站下载
 
 #### APK版本说明：
@@ -62,13 +62,9 @@
 3. Auto.js执行大部分任务不需要root权限。只有需要精确坐标点击、滑动的相关函数才需要root权限
 4. Auto.js可以提供界面编写等功能，不仅仅是作为一个脚本软件而存在
 
-### autojs信息
 
-* 官方论坛： [autojs.org](http://www.autojs.org)
-* 文档：可在[这里](https://hyb1996.github.io/AutoJs-Docs/)查看在线文档。目前文档仍然不完善。
-*
-
-示例：可在[这里](https://github.com/hyb1996/NoRootScriptDroid/tree/master/app/src/main/assets/sample)查看一些示例，或者直接在应用内查看和运行。
+### 示例
+可在[这里](https://github.com/aiselp/AutoX/tree/setup-v7/app/src/main/assets/sample)查看一些示例，或者直接在应用内查看和运行。
 
 ### 架构图
 
@@ -130,7 +126,10 @@
 ```shell
 ./gradlew autojs:buildJsModule
 ```
-
+##### 构建文档
+```shell
+./gradlew app:buildDocs
+````
 ##### 本地安装调试版本到设备：
 ```shell
 ./gradlew app:buildDebugTemplateApp && ./gradlew app:assembleV7Debug && ./gradlew app:installV7Debug

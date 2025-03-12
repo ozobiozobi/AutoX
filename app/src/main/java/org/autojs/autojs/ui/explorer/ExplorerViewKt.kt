@@ -28,6 +28,7 @@ import com.stardust.autojs.servicecomponents.EngineController
 import com.stardust.pio.PFiles
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import org.autojs.autojs.model.explorer.Explorer
 import org.autojs.autojs.model.explorer.ExplorerChangeEvent
@@ -53,8 +54,6 @@ import org.autojs.autojs.ui.widget.BindableViewHolder
 import org.autojs.autojs.workground.WrapContentGridLayoutManger
 import org.autojs.autoxjs.R
 import org.autojs.autoxjs.databinding.ScriptFileListDirectoryBinding
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 import java.io.File
 import java.util.Stack
 
@@ -76,6 +75,7 @@ open class ExplorerViewKt : SwipeRefreshLayout, OnRefreshListener,
     private var dirSortMenuShowing = false
     private var directorySpanSize1 = 2
     val currentPage get() = currentPageState.currentPage
+    private var disposable: Disposable? = null
 
     constructor(context: Context) : super(context) {
         init()
@@ -128,18 +128,18 @@ open class ExplorerViewKt : SwipeRefreshLayout, OnRefreshListener,
         }
 
     fun setExplorer(explorer: Explorer?, rootPage: ExplorerPage?) {
-        if (this.explorer != null) this.explorer!!.unregisterChangeListener(this)
+        disposable?.dispose()
         this.explorer = explorer
         setRootPage(rootPage)
-        this.explorer!!.registerChangeListener(this)
+        disposable = this.explorer!!.registerChangeListener { event -> onExplorerChange(event) }
     }
 
     fun setExplorer(explorer: Explorer?, rootPage: ExplorerPage?, currentPage: ExplorerPage) {
-        if (this.explorer != null) this.explorer!!.unregisterChangeListener(this)
+        disposable?.dispose()
         this.explorer = explorer
         pageStateHistory.clear()
         setCurrentPageState(ExplorerPageState(rootPage))
-        this.explorer!!.registerChangeListener(this)
+        disposable = this.explorer!!.registerChangeListener { event -> onExplorerChange(event) }
         enterChildPage(currentPage)
     }
 
@@ -256,7 +256,6 @@ open class ExplorerViewKt : SwipeRefreshLayout, OnRefreshListener,
             }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
     fun onExplorerChange(event: ExplorerChangeEvent) {
         Log.d(LOG_TAG, "on explorer change: $event")
         if (event.action == ExplorerChangeEvent.ALL) {
@@ -393,12 +392,12 @@ open class ExplorerViewKt : SwipeRefreshLayout, OnRefreshListener,
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (explorer != null) explorer!!.registerChangeListener(this)
+        disposable?.dispose()
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        explorer!!.unregisterChangeListener(this)
+        disposable?.dispose()
     }
 
     protected open fun onCreateViewHolder(

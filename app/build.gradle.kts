@@ -1,5 +1,5 @@
-
 import com.android.build.gradle.internal.tasks.factory.dependsOn
+import java.io.FileNotFoundException
 
 plugins {
     id("com.android.application")
@@ -28,7 +28,7 @@ android {
             }
         }
         resourceConfigurations.addAll(
-            listOf("zh", "en", "es", "ar", "ja", "zh_TW", "fr", "de", "it", "ko", "ru", "tr","lt")
+            listOf("zh", "en", "es", "ar", "ja", "zh_TW", "fr", "de", "it", "ko", "ru", "tr", "lt")
         )
     }
     buildFeatures {
@@ -130,7 +130,6 @@ android {
 }
 
 dependencies {
-    val AAVersion = "4.5.2"
 
     implementation(platform(libs.compose.bom))
     // Deprecated!!
@@ -149,10 +148,6 @@ dependencies {
     testImplementation(libs.junit)
     // Kotlin携程
     implementation(libs.kotlinx.coroutines.android)
-    // Android Annotations Deprecated!!
-    kapt("org.androidannotations:androidannotations:$AAVersion")
-    //noinspection GradleDependency
-    implementation("org.androidannotations:androidannotations-api:$AAVersion")
     // ButterKnife Deprecated!!
     implementation("com.jakewharton:butterknife:10.2.1")
     kapt("com.jakewharton:butterknife-compiler:10.2.3")
@@ -180,8 +175,6 @@ dependencies {
     implementation("com.bignerdranch.android:expandablerecyclerview:3.0.0-RC1")
     //FlexibleDivider
     implementation("com.yqritc:recyclerview-flexibledivider:1.4.0")
-    //Commons-lang
-    implementation(libs.commons.lang3)
 
     // RxJava  Deprecated!!
     implementation(libs.rxjava2)
@@ -190,9 +183,6 @@ dependencies {
     implementation(libs.retrofit2.retrofit)
     implementation(libs.retrofit2.converter.gson)
     debugImplementation(libs.leakcanary.android)
-    // Optional, if you use support library fragments:
-    implementation("com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0")
-    implementation("com.jakewharton.retrofit:retrofit2-kotlin-coroutines-adapter:0.9.2")
     //Glide
     implementation(libs.glide)
     ksp(libs.glide.ksp)
@@ -269,5 +259,48 @@ tasks.register("buildDebugTemplateApp") {
 tasks.named("clean").configure {
     doFirst {
         delete(File(assetsDir, "template.apk"))
+    }
+}
+
+tasks.register("buildDocs") {
+    doLast {
+        val v2DocDir = File(rootProject.projectDir, "docs/v2")
+        val jsApiDir = File(rootProject.projectDir, "autojs/src/js-api")
+        if (!v2DocDir.isDirectory) {
+            logger.error("run command: `git submodule update --init --recursive` install docs/v2")
+            throw FileNotFoundException("${v2DocDir.path} not found")
+        }
+        val buildFile = File.createTempFile("buildJs", ".mjs")
+        exec {
+            workingDir(jsApiDir)
+            buildFile.writeText(
+                """
+                import { execSync } from 'child_process'
+                execSync('npm install', { stdio: 'inherit' })
+                execSync('npm run docs', { stdio: 'inherit' })
+            """.trimIndent()
+            )
+            commandLine("node", buildFile.path)
+        }
+        copy {
+            from(File(jsApiDir, "docs"))
+            into(File(v2DocDir,"docs/nodejs/modules"))
+        }
+        exec {
+            workingDir(v2DocDir)
+            buildFile.writeText(
+                """
+                import { execSync } from 'child_process'
+                execSync('npm install', { stdio: 'inherit' })
+                execSync('npm run build', { stdio: 'inherit' })
+            """.trimIndent()
+            )
+            commandLine("node", buildFile.path)
+        }
+        copy {
+            from(File(v2DocDir,"build"))
+            into(File(projectDir, "src/main/assets/docs/v2"))
+        }
+        buildFile.delete()
     }
 }

@@ -29,11 +29,9 @@ import org.autojs.autojs.model.explorer.ExplorerDirPage;
 import org.autojs.autojs.model.explorer.ExplorerFileItem;
 import org.autojs.autojs.model.explorer.ExplorerPage;
 import org.autojs.autojs.model.explorer.Explorers;
-import org.autojs.autojs.storage.file.TmpScriptFiles;
 import org.autojs.autojs.model.sample.SampleFile;
 import org.autojs.autojs.model.script.ScriptFile;
 import org.autojs.autojs.model.script.Scripts;
-import org.autojs.autojs.network.download.DownloadManager;
 import org.autojs.autojs.ui.filechooser.FileChooserDialogBuilder;
 import org.autojs.autojs.ui.shortcut.ShortcutCreateActivity;
 import org.autojs.autojs.ui.timing.TimedTaskSettingActivity;
@@ -321,39 +319,6 @@ public class ScriptOperations {
         }
     }
 
-
-    public Observable<ScriptFile> download(String url) {
-        String fileName = DownloadManager.parseFileNameLocally(url);
-        return new FileChooserDialogBuilder(mContext)
-                .title(R.string.text_select_save_path)
-                .dir(Pref.getScriptDirPath())
-                .chooseDir()
-                .singleChoice()
-                .map(saveDir -> new File(saveDir, fileName).getPath())
-                .flatMap(savePath -> {
-                    if (!new File(savePath).exists()) {
-                        return Observable.just(savePath);
-                    }
-                    return RxDialogs.confirm(mContext, R.string.confirm_overwrite_file)
-                            .flatMap(yes -> {
-                                if (yes) {
-                                    new File(savePath).delete();
-                                    return Observable.just(savePath);
-                                } else {
-                                    return Observable.empty();
-                                }
-                            });
-                })
-                .flatMap(savePath -> DownloadManager.getInstance().downloadWithProgress(mContext, url, savePath))
-                .map(ScriptFile::new);
-    }
-
-    public Observable<ScriptFile> temporarilyDownload(String url) {
-        return Observable.fromCallable(() -> TmpScriptFiles.create(mContext))
-                .flatMap(tmpFile ->
-                        DownloadManager.getInstance().downloadWithProgress(mContext, url, tmpFile.getPath()))
-                .map(ScriptFile::new);
-    }
 
     public void importFile() {
         new FileChooserDialogBuilder(mContext)

@@ -10,6 +10,11 @@ interface IShizukuUserService {
 
      String runShellCommand(int id, String command) = 2;
      void recycleShell(int id) = 3;
+     void setConsole(in IBinder listener) = 4;
+
+     void runNodeScript(String path) = 5;
+     String runRhinoScript(String script) = 6;
+     String runRhinoScriptFile(String path) = 7;
 
      String getPackageName() = 55; // Get package name
 }

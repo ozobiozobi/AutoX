@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.stardust.app.GlobalAppContext
 import com.stardust.autojs.BuildConfig
+import com.stardust.autojs.core.console.ConsoleImpl
 import com.stardust.autojs.servicecomponents.ScriptServiceConnection
 import com.stardust.autojs.util.ProcessUtils
 import kotlinx.coroutines.CoroutineScope
@@ -65,7 +66,12 @@ class ShizukuClient private constructor() : Shizuku.OnRequestPermissionResultLis
         }
     }
 
-    fun setupService(packageName: String) = scope.launch {
+    fun setupService(packageName: String, console: ConsoleImpl? = null) = scope.launch {
+        if (console != null) {
+            val subscribe = shizukuConnection.binderConsoleListener.logPublish.subscribe {
+                console.print(it.level, it.content)
+            }
+        }
         if (available) {
             bindService(packageName)
         }

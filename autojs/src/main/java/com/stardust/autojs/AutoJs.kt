@@ -65,7 +65,7 @@ abstract class AutoJs protected constructor(protected val application: Applicati
         ObjectWatcher.init(application)
         ScreenMetrics.initIfNeeded(application)
         MlKit.initialize(application)
-        ShizukuClient.instance.setupService(application.packageName)
+        ShizukuClient.instance.setupService(application.packageName, globalConsole)
         scriptEngineService = buildScriptEngineService()
         ScriptEngineService.instance = scriptEngineService
         addAccessibilityServiceDelegates()
@@ -120,7 +120,7 @@ abstract class AutoJs protected constructor(protected val application: Applicati
         initContextFactory()
         scriptEngineManager.registerEngine(AutoFileSource.ENGINE) { RootAutomatorEngine(mContext) }
         scriptEngineManager.registerEngine(NodeScriptEngine.ID) {
-            NodeScriptEngine(mContext, uiHandler)
+            NodeScriptEngine(mContext)
         }
     }
 

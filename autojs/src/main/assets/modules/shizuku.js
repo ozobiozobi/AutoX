@@ -11,5 +11,19 @@ exports.createShell = function() {
 }*/
 
 exports.isAlive = function(){
-    return __runtime.shell.isShizukuAlive();
+    return __runtime.shizuku.isShizukuAlive();
+}
+
+exports.runRhinoScriptFile = function(path){
+    let data =  __runtime.shizuku.runRhinoScriptFile(path);
+    if (!data){
+        return data;
+    }else return JSON.parse(data);
+}
+
+exports.runRhinoScript = function(script){
+    let data = __runtime.shizuku.runRhinoScript(script);
+    if (!data){
+       return data;
+    }else return JSON.parse(data);
 }

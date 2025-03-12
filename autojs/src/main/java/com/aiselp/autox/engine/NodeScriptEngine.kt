@@ -29,7 +29,6 @@ import com.stardust.autojs.execution.ExecutionConfig
 import com.stardust.autojs.runtime.exception.ScriptException
 import com.stardust.autojs.script.ScriptSource
 import com.stardust.pio.PFiles
-import com.stardust.util.UiHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -38,7 +37,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.io.File
 
-class NodeScriptEngine(val context: Context, val uiHandler: UiHandler) :
+class NodeScriptEngine(val context: Context) :
     ScriptEngine.AbstractScriptEngine<ScriptSource>(), ScriptEngine.EngineEvent {
     val runtime: NodeRuntime = V8Host.getNodeInstance().createV8Runtime()
 
@@ -49,7 +48,7 @@ class NodeScriptEngine(val context: Context, val uiHandler: UiHandler) :
     }
     private val moduleDirectory = getModuleDirectory(context)
     private val resultListener = PromiseListener()
-    private val console = NodeConsole(uiHandler)
+    private val console = NodeConsole(context)
     private val nativeApiManager = NativeApiManager(this)
     val converter = JavetProxyConverter()
     val scope = CoroutineScope(Dispatchers.Default)

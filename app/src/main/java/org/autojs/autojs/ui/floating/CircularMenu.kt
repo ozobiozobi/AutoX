@@ -20,6 +20,8 @@ import com.stardust.util.ClipboardUtil
 import com.stardust.view.accessibility.AccessibilityService.Companion.instance
 import com.stardust.view.accessibility.LayoutInspector.CaptureAvailableListener
 import com.stardust.view.accessibility.NodeInfo
+import io.reactivex.rxjava3.subjects.PublishSubject
+import io.reactivex.subjects.SingleSubject
 import org.autojs.autojs.Pref
 import org.autojs.autojs.autojs.AutoJs
 import org.autojs.autojs.autojs.record.GlobalActionRecorder
@@ -36,9 +38,6 @@ import org.autojs.autojs.ui.floating.layoutinspector.LayoutBoundsFloatyWindow
 import org.autojs.autojs.ui.floating.layoutinspector.LayoutHierarchyFloatyWindow
 import org.autojs.autojs.ui.main.MainActivity
 import org.autojs.autoxjs.R
-import org.greenrobot.eventbus.EventBus
-import org.jdeferred.Deferred
-import org.jdeferred.impl.DeferredObject
 
 /**
  * Created by Stardust on 2017/10/18.
@@ -56,7 +55,16 @@ class CircularMenu(context: Context?) : Recorder.OnStateChangedListener, Capture
     private var mLayoutInspectDialog: MaterialDialog? = null
     private var mRunningPackage: String? = null
     private var mRunningActivity: String? = null
-    private var mCaptureDeferred: Deferred<NodeInfo?, Void, Void>? = null
+    private var captureDeferred: SingleSubject<NodeInfo>? = null
+
+    init {
+        initFloaty()
+        setupListeners()
+        mRecorder = GlobalActionRecorder.getSingleton(context)
+        mRecorder.addOnStateChangedListener(this)
+        AutoJs.getInstance().layoutInspector.addCaptureAvailableListener(this)
+    }
+
     private fun setupListeners() {
         mWindow?.setOnActionViewClickListener {
             if (mState == STATE_RECORDING) {
@@ -64,7 +72,7 @@ class CircularMenu(context: Context?) : Recorder.OnStateChangedListener, Capture
             } else if (mWindow?.isExpanded == true) {
                 mWindow?.collapse()
             } else {
-                mCaptureDeferred = DeferredObject()
+                captureDeferred = SingleSubject.create()
                 AutoJs.getInstance().layoutInspector.captureCurrentWindow()
                 mWindow?.expand()
             }
@@ -152,7 +160,7 @@ class CircularMenu(context: Context?) : Recorder.OnStateChangedListener, Capture
             mContext.resources.getDimension(if (mState == STATE_RECORDING) R.dimen.padding_circular_menu_recording else R.dimen.padding_circular_menu_normal)
                 .toInt()
         mActionViewIcon?.setPadding(padding, padding, padding, padding)
-        EventBus.getDefault().post(StateChangeEvent(mState, previousState))
+        STATE_CHANGE_PUBLISHER.onNext(StateChangeEvent(mState, previousState))
     }
 
     private fun stopRecord() {
@@ -210,15 +218,14 @@ class CircularMenu(context: Context?) : Recorder.OnStateChangedListener, Capture
                 .progress(true, 0)
                 .build()
         )
-        mCaptureDeferred?.promise()
-            ?.then({ capture ->
-                mActionViewIcon?.post {
-                    if (!progress.isCancelled) {
-                        progress.dismiss()
-                        windowCreator.invoke(capture)?.let { FloatyService.addWindow(it) }
-                    }
+        val subscribe = captureDeferred?.subscribe({ capture ->
+            mActionViewIcon?.post {
+                if (!progress.isCancelled) {
+                    progress.dismiss()
+                    windowCreator.invoke(capture)?.let { FloatyService.addWindow(it) }
                 }
-            }) { mActionViewIcon?.post { progress.dismiss() } }
+            }
+        }, { mActionViewIcon?.post { progress.dismiss() } })
     }
 
     @Optional
@@ -229,9 +236,9 @@ class CircularMenu(context: Context?) : Recorder.OnStateChangedListener, Capture
     }
 
     override fun onCaptureAvailable(capture: NodeInfo?) {
-        if (mCaptureDeferred != null && mCaptureDeferred!!.isPending) mCaptureDeferred!!.resolve(
-            capture
-        )
+        if (capture != null) {
+            captureDeferred?.onSuccess(capture)
+        }
     }
 
     @Optional
@@ -326,7 +333,7 @@ class CircularMenu(context: Context?) : Recorder.OnStateChangedListener, Capture
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()
         } finally {
-            EventBus.getDefault().post(StateChangeEvent(STATE_CLOSED, mState))
+            STATE_CHANGE_PUBLISHER.onNext(StateChangeEvent(STATE_CLOSED, mState))
             mState = STATE_CLOSED
         }
         mRecorder.removeOnStateChangedListener(this)
@@ -345,17 +352,10 @@ class CircularMenu(context: Context?) : Recorder.OnStateChangedListener, Capture
     override fun onResume() {}
 
     companion object {
+        val STATE_CHANGE_PUBLISHER = PublishSubject.create<StateChangeEvent>()
         const val STATE_CLOSED = -1
         const val STATE_NORMAL = 0
         const val STATE_RECORDING = 1
         private const val IC_ACTION_VIEW = R.drawable.ic_android_eat_js
-    }
-
-    init {
-        initFloaty()
-        setupListeners()
-        mRecorder = GlobalActionRecorder.getSingleton(context)
-        mRecorder.addOnStateChangedListener(this)
-        AutoJs.getInstance().layoutInspector.addCaptureAvailableListener(this)
     }
 }

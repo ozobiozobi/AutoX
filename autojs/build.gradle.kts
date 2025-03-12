@@ -63,7 +63,7 @@ dependencies {
     implementation(libs.preference.ktx)
     implementation(libs.javet.android.node)
     api(libs.rxjava3.rxandroid)
-    api(libs.eventbus)
+
     api(libs.ktsh)
     api(libs.bundles.shizuku)
     api("net.lingala.zip4j:zip4j:1.3.2")
@@ -73,8 +73,6 @@ dependencies {
     api("com.makeramen:roundedimageview:2.3.0")
     // OkHttp
     api(libs.okhttp)
-    // JDeferred
-    api("org.jdeferred:jdeferred-android-aar:1.2.6")
     // RootShell
     api("com.github.Stericson:RootShell:1.6")
     // Gson

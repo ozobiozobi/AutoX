@@ -12,9 +12,9 @@ import com.stardust.util.SparseArrayEntries;
 import com.stardust.view.accessibility.AccessibilityNodeInfoHelper;
 import com.stardust.view.accessibility.NodeInfo;
 
-import org.greenrobot.eventbus.EventBus;
-
 import java.util.List;
+
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
 
 /**
@@ -29,11 +29,10 @@ public class AccessibilityActionConverter {
             .entry(AccessibilityEvent.TYPE_VIEW_SCROLLED, new DoOnceConverter("//scroll???"))
             .entry(AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED, new SetTextEventConverter())
             .sparseArray();
+    public static final PublishSubject<AccessibilityActionRecorder.AccessibilityActionRecordEvent> ACTION_RECORD_SUBJECT = PublishSubject.create();
 
     static {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            CONVERTER_MAP.put(AccessibilityEvent.TYPE_VIEW_CONTEXT_CLICKED, new DoOnceConverter("contextClick"));
-        }
+        CONVERTER_MAP.put(AccessibilityEvent.TYPE_VIEW_CONTEXT_CLICKED, new DoOnceConverter("contextClick"));
     }
 
     private StringBuilder mScript = new StringBuilder();
@@ -54,7 +53,7 @@ public class AccessibilityActionConverter {
             }
             converter.onAccessibilityEvent(service, event, mScript);
             mScript.append("\n");
-            EventBus.getDefault().post(new AccessibilityActionRecorder.AccessibilityActionRecordEvent(event));
+            ACTION_RECORD_SUBJECT.onNext(new AccessibilityActionRecorder.AccessibilityActionRecordEvent(event));
         }
     }
 

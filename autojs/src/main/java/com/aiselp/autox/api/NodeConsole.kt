@@ -1,5 +1,6 @@
 package com.aiselp.autox.api
 
+import android.content.Context
 import com.caoccao.javet.annotations.V8Function
 import com.caoccao.javet.interop.V8Runtime
 import com.caoccao.javet.values.V8Value
@@ -9,14 +10,14 @@ import com.stardust.autojs.core.console.GlobalConsole
 import com.stardust.autojs.runtime.api.Console
 import com.stardust.util.UiHandler
 
-class NodeConsole(uiHandler: UiHandler) : NativeApi {
+class NodeConsole(context: Context) : NativeApi {
     override val moduleId: String = "console"
     override val globalModule: Boolean = true
     private var v8ValueObject: V8ValueObject? = null
     val console: Console = try {
         AutoJs.instance.globalConsole
     } catch (e: Exception) {
-        GlobalConsole(uiHandler)
+        GlobalConsole(UiHandler(context))
     }
 
     override fun install(v8Runtime: V8Runtime, global: V8ValueObject): NativeApi.BindingMode {

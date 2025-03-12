@@ -1,6 +1,7 @@
 package com.stardust.autojs
 
 import android.content.Context
+import android.util.Log
 import com.stardust.autojs.engine.JavaScriptEngine
 import com.stardust.autojs.engine.ScriptEngine
 import com.stardust.autojs.engine.ScriptEngineManager
@@ -20,8 +21,7 @@ import com.stardust.autojs.script.JavaScriptSource
 import com.stardust.autojs.script.ScriptSource
 import com.stardust.lang.ThreadCompat
 import com.stardust.util.UiHandler
-import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.Subscribe
+import io.reactivex.rxjava3.subjects.PublishSubject
 
 /**
  * Created by Stardust on 2017/1/23.
@@ -40,20 +40,17 @@ class ScriptEngineService internal constructor(builder: ScriptEngineServiceBuild
         }
     private val mScriptExecutionObserver = ScriptExecutionObserver()
     private val mScriptExecutions = LinkedHashMap<Int, ScriptExecution>()
+    private val disposable = executionEventPublish.subscribe { event ->
+        if (event.code == ScriptExecutionEvent.ON_START) {
+            globalConsole.verbose(mContext.getString(R.string.text_start_running) + "[" + event.message + "]")
+        } else if (event.code == ScriptExecutionEvent.ON_EXCEPTION) {
+            mUiHandler.toast(mContext.getString(R.string.text_error) + ": " + event.message)
+        }
+    }
 
     init {
         mScriptEngineManager.setEngineLifecycleCallback(mEngineLifecycleObserver)
         mScriptExecutionObserver.registerScriptExecutionListener(GLOBAL_LISTENER)
-        EVENT_BUS.register(object {
-            @Subscribe
-            fun onScriptExecution(event: ScriptExecutionEvent) {
-                if (event.code == ScriptExecutionEvent.ON_START) {
-                    globalConsole.verbose(mContext.getString(R.string.text_start_running) + "[" + event.message + "]")
-                } else if (event.code == ScriptExecutionEvent.ON_EXCEPTION) {
-                    mUiHandler.toast(mContext.getString(R.string.text_error) + ": " + event.message)
-                }
-            }
-        })
         mScriptEngineManager.putGlobal("context", mUiHandler.context)
         ScriptRuntime.setApplicationContext(builder.mUiHandler.context.applicationContext)
     }
@@ -185,7 +182,7 @@ class ScriptEngineService internal constructor(builder: ScriptEngineServiceBuild
 
     companion object {
         private const val LOG_TAG = "ScriptEngineService"
-        private val EVENT_BUS = EventBus()
+        private val executionEventPublish = PublishSubject.create<ScriptExecutionEvent>()
         private val GLOBAL_LISTENER: ScriptExecutionListener =
             object : ScriptExecutionListener {
                 override fun onStart(execution: ScriptExecution) {
@@ -196,7 +193,7 @@ class ScriptEngineService internal constructor(builder: ScriptEngineServiceBuild
                             -1
                         )
                     }
-                    EVENT_BUS.post(
+                    executionEventPublish.onNext(
                         ScriptExecutionEvent(
                             ScriptExecutionEvent.ON_START,
                             execution.source.toString()
@@ -210,7 +207,7 @@ class ScriptEngineService internal constructor(builder: ScriptEngineServiceBuild
 
                 private fun onFinish(execution: ScriptExecution?) {}
                 override fun onException(execution: ScriptExecution, e: Throwable) {
-                    e.printStackTrace()
+                    Log.e(LOG_TAG, e.stackTraceToString())
                     onFinish(execution)
                     var message: String? = null
                     val engine = execution.engine
@@ -228,7 +225,7 @@ class ScriptEngineService internal constructor(builder: ScriptEngineServiceBuild
                         }
                     }
                     if (message != null) {
-                        EVENT_BUS.post(
+                        executionEventPublish.onNext(
                             ScriptExecutionEvent(
                                 ScriptExecutionEvent.ON_EXCEPTION,
                                 message

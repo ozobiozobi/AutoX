@@ -10,6 +10,7 @@ import com.stardust.autojs.project.ProjectConfig
 import com.stardust.autojs.project.ProjectConfig.Companion.fromProject
 import com.stardust.autojs.servicecomponents.EngineController
 import com.stardust.pio.PFile
+import io.reactivex.rxjava3.disposables.Disposable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,13 +20,13 @@ import org.autojs.autojs.model.explorer.Explorers
 import org.autojs.autojs.ui.build.BuildActivity.Companion.start
 import org.autojs.autojs.ui.build.ProjectConfigActivity
 import org.autojs.autoxjs.R
-import org.greenrobot.eventbus.Subscribe
 import java.io.File
 
 class ExplorerProjectToolbar : CardView {
     private var mProjectConfig: ProjectConfig? = null
     private var mDirectory: PFile? = null
     private val mProjectName: TextView
+    var disposable: Disposable? = null
 
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet?) : super(
@@ -82,15 +83,15 @@ class ExplorerProjectToolbar : CardView {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        Explorers.workspace().registerChangeListener(this)
+        disposable =
+            Explorers.workspace().registerChangeListener { onExplorerChange(it) }
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        Explorers.workspace().unregisterChangeListener(this)
+        disposable?.dispose()
     }
 
-    @Subscribe
     fun onExplorerChange(event: ExplorerChangeEvent) {
         if (mDirectory == null) {
             return

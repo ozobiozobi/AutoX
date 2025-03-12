@@ -1,33 +1,34 @@
 package org.autojs.autojs.model.explorer;
 
+import static org.autojs.autojs.model.explorer.ExplorerChangeEvent.CHANGE;
+import static org.autojs.autojs.model.explorer.ExplorerChangeEvent.CHILDREN_CHANGE;
+import static org.autojs.autojs.model.explorer.ExplorerChangeEvent.CREATE;
+import static org.autojs.autojs.model.explorer.ExplorerChangeEvent.REMOVE;
+
 import androidx.annotation.Nullable;
 import android.util.LruCache;
 
 import com.stardust.pio.PFile;
 
-import org.greenrobot.eventbus.EventBus;
-
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Consumer;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
-import static org.autojs.autojs.model.explorer.ExplorerChangeEvent.*;
 
 
 public class Explorer {
+    public static final PublishSubject<ExplorerChangeEvent> EVENTS = PublishSubject.create();
 
     private final ExplorerProvider mExplorerProvider;
-    private final EventBus mEventBus;
     @Nullable
     private final LruCache<String, ExplorerPage> mExplorerPageLruCache;
 
-    public Explorer(ExplorerProvider explorerProvider, int cacheSize, EventBus eventBus) {
+    public Explorer(ExplorerProvider explorerProvider, int cacheSize) {
         mExplorerPageLruCache = cacheSize <= 0 ? null : new LruCache<>(cacheSize);
         mExplorerProvider = explorerProvider;
-        mEventBus = eventBus;
-    }
-
-    public Explorer(ExplorerProvider explorerProvider, int cacheSize) {
-        this(explorerProvider, cacheSize, EventBus.getDefault());
     }
 
     public ExplorerProvider getProvider() {
@@ -36,7 +37,7 @@ public class Explorer {
 
     public void notifyChildrenChanged(ExplorerPage page) {
         clearCache(page);
-        mEventBus.post(new ExplorerChangeEvent(page, CHILDREN_CHANGE, null));
+        EVENTS.onNext(new ExplorerChangeEvent(page, CHILDREN_CHANGE, null));
     }
 
     public void notifyItemChanged(ExplorerItem oldItem, ExplorerItem newItem) {
@@ -45,7 +46,7 @@ public class Explorer {
         if (cachedParent != null) {
             cachedParent.updateChild(oldItem, newItem);
         }
-        mEventBus.post(new ExplorerChangeEvent(parent, CHANGE, oldItem, newItem));
+        EVENTS.onNext(new ExplorerChangeEvent(parent, CHANGE, oldItem, newItem));
     }
 
     private ExplorerPage getFromCache(ExplorerPage parent) {
@@ -66,7 +67,7 @@ public class Explorer {
         if (cachedParent != null) {
             cachedParent.removeChild(item);
         }
-        mEventBus.post(new ExplorerChangeEvent(parent, REMOVE, item));
+        EVENTS.onNext(new ExplorerChangeEvent(parent, REMOVE, item));
     }
 
     private ExplorerPage getParent(ExplorerItem item) {
@@ -87,14 +88,13 @@ public class Explorer {
         if (cachedParent != null) {
             cachedParent.addChild(item);
         }
-        mEventBus.post(new ExplorerChangeEvent(parent, CREATE, item, item));
+        EVENTS.onNext(new ExplorerChangeEvent(parent, CREATE, item, item));
     }
 
-    @SuppressWarnings("unchecked")
     public void refreshAll() {
         if (mExplorerPageLruCache != null)
             mExplorerPageLruCache.evictAll();
-        mEventBus.post(ExplorerChangeEvent.EVENT_ALL);
+        EVENTS.onNext(ExplorerChangeEvent.EVENT_ALL);
     }
 
 
@@ -119,12 +119,8 @@ public class Explorer {
             mExplorerPageLruCache.remove(item.getPath());
     }
 
-    public void registerChangeListener(Object subscriber) {
-        if (!mEventBus.isRegistered(subscriber))
-            mEventBus.register(subscriber);
+    public @NonNull Disposable registerChangeListener(Consumer<ExplorerChangeEvent> subscriber) {
+        return EVENTS.observeOn(io.reactivex.rxjava3.android.schedulers.AndroidSchedulers.mainThread()).subscribe(subscriber);
     }
 
-    public void unregisterChangeListener(Object subscriber) {
-        mEventBus.unregister(subscriber);
-    }
 }

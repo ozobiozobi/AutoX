@@ -80,7 +80,7 @@ class Shell2(initCommand: String) : Closeable {
         val result = Ktsh.SH.run("pgrep -P $pid")
         result.stdout().split("\n").forEach { p ->
             try {
-                val sPid = p.toInt()
+                val sPid = p.toIntOrNull() ?: return
                 exitSubprocess(sPid)
                 Process.killProcess(sPid)
             } catch (e: Exception) {
