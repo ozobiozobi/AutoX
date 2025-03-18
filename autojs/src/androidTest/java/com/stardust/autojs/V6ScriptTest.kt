@@ -8,8 +8,10 @@ import com.aiselp.autox.test.activicy.TestLogActivity
 import com.stardust.app.GlobalAppContext
 import com.stardust.autojs.script.ScriptSource
 import com.stardust.autojs.script.StringScriptSource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -104,7 +106,12 @@ class V6ScriptTest {
                 )
             )
 //            val context = InstrumentationRegistry.getInstrumentation().targetContext
-            TestAutojs.init(application)
+            runBlocking {
+                withContext(Dispatchers.Main) {
+                    TestAutojs.init(application)
+                }
+            }
+
         }
     }
 }

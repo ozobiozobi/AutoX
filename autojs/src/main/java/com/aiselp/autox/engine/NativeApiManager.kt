@@ -34,15 +34,14 @@ class NativeApiManager(engine: NodeScriptEngine) {
             for (api in apis.values) {
                 val bindingMode = api.install(v8Runtime, global)
                 when (bindingMode) {
-                    NativeApi.BindingMode.NOT_BIND -> {}
-                    NativeApi.BindingMode.NATIVE -> {
+                    NativeApi.BindingMode.PROXY -> {
                         autoxObject.set(api.moduleId, api)
                         if (api.globalModule) {
                             global.set(api.moduleId, api)
                         }
                     }
 
-                    NativeApi.BindingMode.PROXY -> v8Runtime.createV8ValueObject()
+                    NativeApi.BindingMode.ObjectBind -> v8Runtime.createV8ValueObject()
                         .use { apiObject ->
                             apiObject.bind(api)
                             autoxObject.set(api.moduleId, apiObject)
@@ -50,6 +49,7 @@ class NativeApiManager(engine: NodeScriptEngine) {
                                 global.set(api.moduleId, apiObject)
                             }
                         }
+                    else -> {}
                 }
             }
         }
@@ -67,7 +67,7 @@ class NativeApiManager(engine: NodeScriptEngine) {
     }
 
     private class RootObject(private val engine: NodeScriptEngine) {
-        @V8Property
+        @get:V8Property
         val context: Context = engine.context.applicationContext
 
         @V8Function

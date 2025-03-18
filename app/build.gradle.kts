@@ -284,6 +284,7 @@ tasks.register("buildDocs") {
         }
         copy {
             from(File(jsApiDir, "docs"))
+            delete(File(v2DocDir,"docs/nodejs/modules"))
             into(File(v2DocDir,"docs/nodejs/modules"))
         }
         exec {

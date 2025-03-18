@@ -20,7 +20,7 @@ class JsEngines(private val engine: NodeScriptEngine) : NativeApi {
     private var emitCallback: V8ValueFunction? = null
 
     override fun install(v8Runtime: V8Runtime, global: V8ValueObject): NativeApi.BindingMode {
-        return NativeApi.BindingMode.PROXY
+        return NativeApi.BindingMode.ObjectBind
     }
 
     override fun recycle(v8Runtime: V8Runtime, global: V8ValueObject) {

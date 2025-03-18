@@ -7,8 +7,9 @@
     "useCodeBlocks": true,
     "expandParameters": false,
     "parametersFormat":"table",
-    "outputFileStrategy":"modules",
+    "outputFileStrategy":"members",
+    "membersWithOwnFile": ["Class", "Enum", "Interface"],
     "mergeReadme": true,
-
+    "lang": "zh",
     "excludeExternals": true
 }

@@ -3,6 +3,7 @@ package com.aiselp.autox.engine
 import android.content.Context
 import android.util.Log
 import com.aiselp.autox.api.JavaInteractor
+import com.aiselp.autox.api.JsApp
 import com.aiselp.autox.api.JsClipManager
 import com.aiselp.autox.api.JsDialogs
 import com.aiselp.autox.api.JsEngines
@@ -116,6 +117,7 @@ class NodeScriptEngine(val context: Context) :
         nativeApiManager.register(JsMedia(context))
         nativeApiManager.register(JsDialogs(eventLoopQueue, context, scope))
         nativeApiManager.register(JsEngines(this))
+        nativeApiManager.register(JsApp(context))
         nativeApiManager.initialize(runtime, global)
     }
 

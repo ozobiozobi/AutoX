@@ -13,7 +13,7 @@ class TestNodeScriptEngineFactory(val context: Context) {
 
     fun createNodeScriptEngine(): NodeScriptEngine {
         check(isInit) { "TestNodeScriptEngineFactory must be init first" }
-        val engine = NodeScriptEngine(context, uiHandler)
+        val engine = NodeScriptEngine(context)
         return engine
     }
 

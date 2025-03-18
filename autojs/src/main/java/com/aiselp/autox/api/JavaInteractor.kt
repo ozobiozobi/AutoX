@@ -25,7 +25,7 @@ class JavaInteractor(
     private lateinit var v8Runtime: V8Runtime
     override fun install(v8Runtime: V8Runtime, global: V8ValueObject): NativeApi.BindingMode {
         this.v8Runtime = v8Runtime
-        return NativeApi.BindingMode.PROXY
+        return NativeApi.BindingMode.ObjectBind
     }
 
     override fun recycle(v8Runtime: V8Runtime, global: V8ValueObject) {

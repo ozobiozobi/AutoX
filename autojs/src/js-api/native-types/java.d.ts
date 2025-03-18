@@ -1,5 +1,10 @@
 declare namespace java {
-    export type JavaClass = {}
+    export interface javaObject {
+        toString(): string;
+    }
+    export interface JavaClass {
+        readonly name: string;
+    }
     function loadClass(name: string): JavaClass
     async function invokeUi<T>(
         javaobj: any,

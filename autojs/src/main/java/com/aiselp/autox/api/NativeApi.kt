@@ -11,6 +11,6 @@ interface NativeApi {
     fun recycle(v8Runtime: V8Runtime, global: V8ValueObject)
 
     enum class BindingMode {
-        NOT_BIND, NATIVE, PROXY
+        NOT_BIND, PROXY, ObjectBind
     }
 }

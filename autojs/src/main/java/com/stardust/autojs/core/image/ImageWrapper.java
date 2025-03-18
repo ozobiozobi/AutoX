@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
 /**
@@ -139,10 +140,7 @@ public class ImageWrapper {
     }
 
     public void recycle() {
-        if (mBitmap != null) {
-            mBitmap.recycle();
-            mBitmap = null;
-        }
+        mBitmap = null;
         if (mMat != null) {
             OpenCVHelper.release(mMat);
             mMat = null;
@@ -155,6 +153,8 @@ public class ImageWrapper {
             throw new IllegalStateException("image has been recycled");
     }
 
+    @Override
+    @NonNull
     public ImageWrapper clone() {
         ensureNotRecycled();
         if (mBitmap == null) {

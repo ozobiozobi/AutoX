@@ -12,7 +12,7 @@ import DialogFactory from './DialogFactory'
 const dialogs = Autox.dialogs
 type DialogOps = dialogs.DialogOps
 export type DialogType = 'app' | 'overlay' | DialogFactory
-export const defaultDialogType: DialogType = 'app'
+export let defaultDialogType: DialogType = 'app'
 
 
 export function showAppDialog(comp: Component, ops?: DialogOps) {

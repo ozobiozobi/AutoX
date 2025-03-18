@@ -44,7 +44,7 @@ class JsUi(nodeScriptEngine: NodeScriptEngine) : NativeApi {
     @get:V8Property
     val theme = JsTheme
     override fun install(v8Runtime: V8Runtime, global: V8ValueObject): NativeApi.BindingMode {
-        return NativeApi.BindingMode.PROXY
+        return NativeApi.BindingMode.ObjectBind
     }
 
     override fun recycle(v8Runtime: V8Runtime, global: V8ValueObject) {

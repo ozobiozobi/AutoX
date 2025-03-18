@@ -1,7 +1,7 @@
 
 module.exports = function (runtime, global) {
     importClass(android.content.Intent);
-    var app = Object.create(runtime.app);
+    var app = {};
     var context = global.context;
 
     app.intent = function (i) {
@@ -62,13 +62,13 @@ module.exports = function (runtime, global) {
                 throw new Error("class " + i + " not found");
             }
         }
-        if(i instanceof android.content.Intent){
+        if (i instanceof android.content.Intent) {
             context.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             return;
         }
-        if(i && i.root) {
+        if (i && i.root) {
             shell("am start " + app.intentToShell(i), true);
-        }else{
+        } else {
             context.startActivity(app.intent(i).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         }
 
@@ -80,17 +80,17 @@ module.exports = function (runtime, global) {
                 app.sendLocalBroadcastSync(app.intent({ action: runtime.getProperty("broadcast." + i) }));
             }
         }
-        if(i && i.root) {
+        if (i && i.root) {
             shell("am broadcast " + app.intentToShell(i), true);
-        }else{
+        } else {
             context.sendBroadcast(app.intent(i));
         }
     }
 
-    app.startService = function(i) {
-        if(i && i.root) {
+    app.startService = function (i) {
+        if (i && i.root) {
             shell("am startservice " + app.intentToShell(i), true);
-        }else{
+        } else {
             context.startService(app.intent(i));
         }
     }
@@ -154,13 +154,13 @@ module.exports = function (runtime, global) {
 
     app.versionCode = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionCode;
     app.versionName = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
-    
+
     app.autojs = {
         versionCode: com.stardust.app.GlobalAppContext.getBuildConfig().VERSION_CODE,
         versionName: com.stardust.app.GlobalAppContext.getBuildConfig().VERSION_NAME
     };
 
-    app.intentToShell = function(i) {
+    app.intentToShell = function (i) {
         var cmd = "";
         function quoteStr(str) {
             return "'" + str.replace("'", "\\'") + "'";
@@ -168,52 +168,52 @@ module.exports = function (runtime, global) {
         function isInt(value) {
             return Number.isInteger(value) && value <= java.lang.Integer.MAX_VALUE && value >= java.lang.Integer.MIN_VALUE;
         }
-        function typeChar(value){
-            if(typeof(value) == 'boolean'){
+        function typeChar(value) {
+            if (typeof (value) == 'boolean') {
                 return 'z';
             }
-            if(typeof(value) == 'number'){
-                if(Number.isInteger(value)){
-                    if(isInt(value)){
+            if (typeof (value) == 'number') {
+                if (Number.isInteger(value)) {
+                    if (isInt(value)) {
                         return 'i';
-                    }else{
+                    } else {
                         return 'l';
                     }
-                }else{
+                } else {
                     return 'f';
                 }
             }
             throw new TypeError("unknown type: " + value);
         }
         function addOption(option, param, quote) {
-            if(quote == undefined || quote === true){
+            if (quote == undefined || quote === true) {
                 param = quoteStr(param);
             }
             cmd += " -" + option + " " + param;
         }
         if (i.className && i.packageName) {
-           addOption("n", i.packageName + "/" + i.className);
+            addOption("n", i.packageName + "/" + i.className);
         }
         if (i.extras) {
             for (var key in i.extras) {
                 let value = i.extras[key];
-                if(typeof(value) == 'string'){
-                    addOption("-es",  quoteStr(key) + ' ' + quoteStr(value), false);
-                }else if(Array.isArray(value)){
-                    if(value.length == 0){
+                if (typeof (value) == 'string') {
+                    addOption("-es", quoteStr(key) + ' ' + quoteStr(value), false);
+                } else if (Array.isArray(value)) {
+                    if (value.length == 0) {
                         throw new Error('Empty array: ' + key);
                     }
                     var e = value[0];
-                    if(typeof(e) == 'string'){
+                    if (typeof (e) == 'string') {
                         cmd += ' --esa ' + quoteStr(key) + ' ';
-                        for(let str of value){
+                        for (let str of value) {
                             cmd += quoteStr(str) + ',';
                         }
                         cmd = cmd.substring(0, cmd.length - 1);
-                    }else{
+                    } else {
                         addOption('-e' + typeChar(e) + 'a', quoteStr(key) + ' ' + value, false);
                     }
-                }else {
+                } else {
                     addOption('-e' + typeChar(value), quoteStr(key) + ' ' + value, false);
                 }
             }
@@ -253,7 +253,8 @@ module.exports = function (runtime, global) {
         return cmd;
     }
 
-    
+
+    Object.setPrototypeOf(app, runtime.app)
 
     global.__asGlobal__(app, ['launchPackage', 'launch', 'launchApp', 'getPackageName', 'getAppName', 'openAppSetting']);
 

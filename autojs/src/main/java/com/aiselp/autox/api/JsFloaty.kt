@@ -12,7 +12,7 @@ class JsFloaty : NativeApi {
     override val moduleId: String = ID
 
     override fun install(v8Runtime: V8Runtime, global: V8ValueObject): NativeApi.BindingMode {
-        return NativeApi.BindingMode.PROXY
+        return NativeApi.BindingMode.ObjectBind
     }
 
     override fun recycle(v8Runtime: V8Runtime, global: V8ValueObject) {

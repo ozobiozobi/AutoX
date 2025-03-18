@@ -41,7 +41,7 @@ async function createRootPackageFile(cb) {
         bin,
         license: n.license,
         author: n.author,
-        dependencies: n.devDependencies
+        dependencies: n.dependencies
     }
     await fs.writeFile('./dist/package.json', JSON.stringify(packageFile, undefined, 2))
 }
