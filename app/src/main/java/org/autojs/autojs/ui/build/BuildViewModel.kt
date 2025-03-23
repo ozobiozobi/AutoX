@@ -3,7 +3,6 @@ package org.autojs.autojs.ui.build
 import android.app.Application
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -22,7 +21,7 @@ import com.stardust.autojs.project.SigningConfig
 import com.stardust.pio.PFiles
 import com.stardust.toast
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -76,6 +75,7 @@ class BuildViewModel(private val app: Application, private var source: String) :
     var isOldProjectConfigExist: Boolean = false
 
     var buildDialogText by mutableStateOf("")
+    var buildDialogError: Exception? by mutableStateOf(null)
     var isShowBuildDialog by mutableStateOf(false)
     var isShowBuildSuccessfullyDialog by mutableStateOf(false)
     var outApk: File? = null
@@ -554,19 +554,13 @@ class BuildViewModel(private val app: Application, private var source: String) :
             outputPath,
             String.format("%s_v%s.apk", projectConfig.name, projectConfig.versionName)
         )
-        withContext(Dispatchers.IO) {
-            callApkBuilder(tmpDir, outApk, projectConfig.copy())
-        }
+        callApkBuilder(tmpDir, outApk, projectConfig.copy())
     }
 
     private suspend fun onBuildFailed(error: Exception) {
+        Log.e(BuildActivity.TAG, "Build failed", error)
         withContext(Dispatchers.Main) {
-            Toast.makeText(
-                app,
-                app.getString(R.string.text_build_failed) + error.message,
-                Toast.LENGTH_SHORT
-            ).show()
-            Log.e(BuildActivity.TAG, "Build failed", error)
+            buildDialogError = error
         }
     }
 
@@ -599,20 +593,20 @@ class BuildViewModel(private val app: Application, private var source: String) :
         tmpDir: File,
         outApk: File,
         config: ProjectConfig
-    ): SharedFlow<Int>? {
+    ) = coroutineScope {
         val templateApk = ApkBuilderPluginHelper.openTemplateApk(app) ?: kotlin.run {
             GlobalAppContext.toast(R.string.text_template_apk_not_found)
-            return null
+            return@coroutineScope null
         }
         val apkBuilder = ApkBuilder(templateApk, outApk, tmpDir.path)
 
-        mainScope.launch(Dispatchers.IO) {
+        val j = launch {
+            apkBuilder.progressState.onEach { state ->
+                onBuildState(state)
+            }.launchIn(this)
+        }
+        launch(Dispatchers.IO) {
             try {
-                apkBuilder.progressState.onEach { state ->
-                    withContext(Dispatchers.Main) {
-                        onBuildState(state)
-                    }
-                }.launchIn(this)
                 withContext(Dispatchers.Main) { isShowBuildDialog = true }
                 val apkKeyStore = keyStore ?: apkSignUtil.getDefaultKeyStore()
                 apkBuilder
@@ -626,10 +620,9 @@ class BuildViewModel(private val app: Application, private var source: String) :
                 onBuildFailed(e)
             } finally {
                 apkBuilder.finish()
+                j.cancel()
             }
         }
-
-        return apkBuilder.progressState
     }
 
     private fun onBuildState(state: Int) {

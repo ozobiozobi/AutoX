@@ -2,10 +2,12 @@ package com.aiselp.autox.apkbuilder
 
 import android.content.Context
 import android.util.Log
-import com.mcal.apksigner.ApkSigner
+import com.android.apksig.ApkSigner
 import com.mcal.apksigner.utils.KeyStoreHelper
 import java.io.File
 import java.security.KeyStore
+import java.security.PrivateKey
+import java.security.cert.X509Certificate
 
 class ApkSignUtil(val context: Context) : AutoCloseable {
 
@@ -115,18 +117,33 @@ class ApkSignUtil(val context: Context) : AutoCloseable {
                         " with ${apkKeyStore.path} ${apkKeyStore.keyStorePassword} ${apkKeyStore.alias} ${apkKeyStore.password}\n" +
                         "v1Sign: $v1Sign v2Sign: $v2Sign v3Sign: $v3Sign v4Sign: $v4Sign"
             )
-            return ApkSigner(oldFile, newFile).apply {
-                useDefaultSignatureVersion = false
-                v1SigningEnabled = v1Sign
-                v2SigningEnabled = v2Sign
-                v3SigningEnabled = v3Sign
-                v4SigningEnabled = v4Sign
-            }.signRelease(
+            val keystore = KeyStoreHelper.loadKeyStore(
                 File(apkKeyStore.path!!),
-                apkKeyStore.keyStorePassword!!,
-                apkKeyStore.alias!!,
-                apkKeyStore.password!!
+                apkKeyStore.keyStorePassword!!.toCharArray()
             )
+            ApkSigner.Builder(
+                listOf(
+                    ApkSigner.SignerConfig.Builder(
+                        "CERT",
+                        keystore.getKey(
+                            apkKeyStore.alias,
+                            apkKeyStore.password!!.toCharArray()
+                        ) as PrivateKey,
+                        listOf(keystore.getCertificate(apkKeyStore.alias) as X509Certificate)
+                    ).build()
+                )
+            ).apply {
+                setInputApk(oldFile)
+                setOutputApk(newFile)
+                setV1SigningEnabled(v1Sign)
+                setV2SigningEnabled(v2Sign)
+                setV3SigningEnabled(v3Sign)
+                setV4SigningEnabled(v4Sign)
+                if (v4Sign){
+                    setV4SignatureOutputFile(File(newFile.path + ".idsig"))
+                }
+            }.build().sign()
+            return true
         }
     }
 }

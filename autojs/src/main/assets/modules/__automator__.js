@@ -136,6 +136,17 @@ module.exports = function(runtime, global){
         runtime.accessibilityBridge.ensureServiceEnabled();
     }
 
+    auto.takeScreenshot = function (){
+        return runtime.automator.takeScreenshot2Sync();
+    }
+
+    auto.takeScreenshotAsync = function (callback){
+        if(typeof(callback) !== "function"){
+            throw new TypeError("callback should be a function");
+        }
+        runtime.automator.takeScreenshot2(callback);
+    }
+
     auto.waitFor = function(){
         runtime.accessibilityBridge.waitForServiceEnabled();
     }

@@ -23,10 +23,6 @@
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning"
         tools:replace="android:label, android:allowBackup">
-        <activity
-            android:name="com.stardust.auojs.inrt.LoginActivity"
-            android:label="@string/title_activity_login"
-            android:process="@string/text_script_process_name" />
 
         <activity
             android:name="com.stardust.auojs.inrt.LogActivity"
@@ -52,7 +48,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.stardust.auojs.inrt.fileprovider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:process="@string/text_script_process_name"
             android:grantUriPermissions="true">

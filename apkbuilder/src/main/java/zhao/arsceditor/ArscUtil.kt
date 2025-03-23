@@ -1,5 +1,6 @@
 package zhao.arsceditor
 
+import android.util.Log
 import zhao.arsceditor.ResDecoder.ARSCCallBack
 import zhao.arsceditor.ResDecoder.data.ResTable
 import java.io.*
@@ -48,17 +49,20 @@ class ArscUtil {
         resFile: String,
         callback: ((config: String, type: String, key: String, value: String, id: Int) -> Unit)? = null
     ) {
-        FileInputStream(resFile).use { input->
+        FileInputStream(resFile).use { input ->
             when {
                 resFile.endsWith(".arsc") -> {
                     open(input, ARSC, callback)
                 }
+
                 resFile.endsWith(".xml") -> {
                     open(input, AXML)
                 }
+
                 resFile.endsWith(".dex") -> {
                     open(input, DEX)
                 }
+
                 else -> {
                     throw IOException("Unsupported FileType")
                 }
@@ -184,9 +188,9 @@ class ArscUtil {
                 Configs!!.add(config)
 
             // 如果Config列表中存在该资源的Config元素
-            if (type == key){
+            if (type == key) {
                 // 如果Config是params[1]的值或者是
-                if(config == cfg || config == "-$cfg"){
+                if (config == cfg || config == "-$cfg") {
                     // 向储存字符串的列表中添加字符串成员
                     txtOriginal.add(value)
                     // 向储存修改后的字符串的列表中添加空成员
@@ -202,7 +206,7 @@ class ArscUtil {
     fun changeResource(key: String, value: String) {
         val position = txtTranslatedKey.indexOf(key)
         if (position == -1) return
-        println("txtTranslated: " + txtOriginal[position])
+        Log.d(TAG, "txtTranslated: " + txtOriginal[position])
         txtTranslated.removeAt(position)
         // 向当前位置添加新的内容，以此实现文本的更新
         txtTranslated.add(position, value)

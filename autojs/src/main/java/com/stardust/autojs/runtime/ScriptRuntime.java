@@ -85,9 +85,6 @@ public abstract class ScriptRuntime {
     public final Console console;
 
     @ScriptVariable
-    public final SimpleActionAutomator automator;
-
-    @ScriptVariable
     public final ActivityInfoProvider info;
 
     @ScriptVariable
@@ -164,8 +161,6 @@ public abstract class ScriptRuntime {
         console = builder.getConsole();
         accessibilityBridge = builder.getAccessibilityBridge();
         ui = new UI(context, this);
-        this.automator = new SimpleActionAutomator(accessibilityBridge, this);
-        automator.setScreenMetrics(mScreenMetrics);
         this.info = accessibilityBridge.getInfoProvider();
         images = new Images(context, this, builder.getScreenCaptureRequester());
         engines = new Engines(builder.getEngineService(), this);

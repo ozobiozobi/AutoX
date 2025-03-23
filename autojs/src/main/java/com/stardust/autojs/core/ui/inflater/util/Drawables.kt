@@ -5,17 +5,18 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.util.Base64
 import android.view.View
 import android.widget.ImageView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.net.toUri
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
-import com.stardust.app.GlobalAppContext.autojsPackageName
+import com.stardust.autojs.R
 import com.stardust.autojs.core.ui.inflater.ImageLoader
 import java.util.regex.Pattern
 
@@ -23,11 +24,13 @@ import java.util.regex.Pattern
  * Created by Stardust on 2017/11/3.
  */
 open class Drawables {
-    var imageLoader = sDefaultImageLoader
+    private val drawableClass = R.drawable::class.java
+    private val attrClass = R.attr::class.java
+    private var imageLoader = sDefaultImageLoader
+
     fun parse(context: Context, value: String): Drawable? {
-        val resources = context.resources
         if (value.startsWith("@color/") || value.startsWith("@android:color/") || value.startsWith("#")) {
-            return ColorDrawable(Colors.parse(context, value))
+            return Colors.parse(context, value).toDrawable()
         }
         if (value.startsWith("?")) {
             return loadAttrResources(context, value)
@@ -37,21 +40,21 @@ open class Drawables {
         } else loadDrawableResources(context, value)
     }
 
-    fun loadDrawableResources(context: Context, value: String): Drawable? {
-        val resId = context.resources.getIdentifier(
-            value, "drawable",
-            autojsPackageName
-        )
+    private fun loadDrawableResources(context: Context, value: String): Drawable? {
+        val resId = try {
+            val field = drawableClass.getField(value.substring(10))
+            field.get(null) as Int
+        } catch (e: Exception) {
+            0
+        }
         if (resId == 0) throw Resources.NotFoundException("drawable not found: $value")
         return ContextCompat.getDrawable(context, resId)
     }
 
     fun loadAttrResources(context: Context, value: String): Drawable? {
+        val field = attrClass.getField(value.substring(1))
         val attr = intArrayOf(
-            context.resources.getIdentifier(
-                value.substring(1), "attr",
-                autojsPackageName
-            )
+            field.get(null) as Int
         )
         val ta = context.obtainStyledAttributes(attr)
         val drawable = ta.getDrawable(0 /* index */)
@@ -77,7 +80,7 @@ open class Drawables {
 
     fun <V : ImageView> setupWithImage(view: V, value: String) {
         if (value.startsWith("http://") || value.startsWith("https://")) {
-            loadInto(view, Uri.parse(value))
+            loadInto(view, value.toUri())
         } else if (value.startsWith("data:")) {
             loadDataInto(view, value)
         } else {
@@ -92,7 +95,7 @@ open class Drawables {
 
     fun setupWithViewBackground(view: View, value: String) {
         if (value.startsWith("http://") || value.startsWith("https://")) {
-            loadIntoBackground(view, Uri.parse(value))
+            loadIntoBackground(view, value.toUri())
         } else {
             view.background = parse(view, value)
         }

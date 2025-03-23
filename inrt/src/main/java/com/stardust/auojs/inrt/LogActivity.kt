@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.aiselp.autox.ui.material3.theme.AppTheme
+import com.stardust.app.GlobalAppContext
 import com.stardust.auojs.inrt.autojs.AutoJs
 import com.stardust.auojs.inrt.launch.GlobalProjectLauncher
 import com.stardust.autojs.core.console.ConsoleView
@@ -47,7 +48,7 @@ class LogActivity : AppCompatActivity() {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text(text = stringResource(R.string.app_name)) },
+                            title = { Text(text = GlobalAppContext.appName) },
                             actions = { OptionsMenu() })
                     },
                     floatingActionButton = {

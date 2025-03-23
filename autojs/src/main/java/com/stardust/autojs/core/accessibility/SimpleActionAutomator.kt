@@ -2,12 +2,15 @@ package com.stardust.autojs.core.accessibility
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
+import android.view.Display
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.annotation.RequiresApi
 import com.stardust.autojs.annotation.ScriptInterface
+import com.stardust.autojs.core.image.ImageWrapper
 import com.stardust.autojs.runtime.ScriptRuntime
 import com.stardust.autojs.runtime.accessibility.AccessibilityConfig
 import com.stardust.automator.GlobalActionAutomator
@@ -17,12 +20,19 @@ import com.stardust.automator.simple_action.ActionTarget
 import com.stardust.automator.simple_action.SimpleAction
 import com.stardust.util.DeveloperUtils
 import com.stardust.util.ScreenMetrics
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.runBlocking
 
 /**
  * Created by Stardust on 2017/4/2.
  */
 
-class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridge, private val mScriptRuntime: ScriptRuntime) {
+class SimpleActionAutomator(
+    private val mAccessibilityBridge: AccessibilityBridge,
+    private val mScriptRuntime: ScriptRuntime
+) {
 
     private lateinit var mGlobalActionAutomator: GlobalActionAutomator
 
@@ -30,6 +40,42 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
 
     private val isRunningPackageSelf: Boolean
         get() = DeveloperUtils.isSelfPackage(mAccessibilityBridge.infoProvider.latestPackage)
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    @ScriptInterface
+    fun takeScreenshot2(callback: ((ImageWrapper?, errCode: Int) -> Unit)?) {
+        ensureAccessibilityServiceEnabled()
+        val service = mAccessibilityBridge.service!!
+        service.takeScreenshot(
+            Display.DEFAULT_DISPLAY,
+            Dispatchers.Default.asExecutor(),
+            object : AccessibilityService.TakeScreenshotCallback {
+                override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
+                    val bitmap =
+                        Bitmap.wrapHardwareBuffer(screenshot.hardwareBuffer, screenshot.colorSpace)
+                    val imageWrapper = ImageWrapper.ofBitmap(bitmap)
+                    callback?.invoke(imageWrapper, 0)
+                }
+
+                override fun onFailure(errorCode: Int) {
+                    callback?.invoke(null, errorCode)
+                }
+            }
+        )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    fun takeScreenshot2Sync(): ImageWrapper = runBlocking {
+        val deferred = CompletableDeferred<ImageWrapper>()
+        takeScreenshot2 { imageWrapper, errCode ->
+            if (imageWrapper != null) {
+                deferred.complete(imageWrapper)
+            } else {
+                deferred.completeExceptionally(Error("takeScreenshot failed, errCode: $errCode"))
+            }
+        }
+        deferred.await()
+    }
 
     @ScriptInterface
     fun text(text: String, i: Int): ActionTarget {
@@ -41,7 +87,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
         return ActionTarget.BoundsActionTarget(Rect(left, top, right, bottom))
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @ScriptInterface
     fun editable(i: Int): ActionTarget {
         ScriptRuntime.requiresApi(Build.VERSION_CODES.LOLLIPOP)
@@ -75,12 +120,22 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
 
     @ScriptInterface
     fun scrollBackward(i: Int): Boolean {
-        return performAction(ActionFactory.createScrollAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, i))
+        return performAction(
+            ActionFactory.createScrollAction(
+                AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD,
+                i
+            )
+        )
     }
 
     @ScriptInterface
     fun scrollForward(i: Int): Boolean {
-        return performAction(ActionFactory.createScrollAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, i))
+        return performAction(
+            ActionFactory.createScrollAction(
+                AccessibilityNodeInfo.ACTION_SCROLL_FORWARD,
+                i
+            )
+        )
     }
 
     @ScriptInterface
@@ -104,14 +159,12 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
     }
 
     @ScriptInterface
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     fun setText(target: ActionTarget, text: String): Boolean {
         ScriptRuntime.requiresApi(Build.VERSION_CODES.LOLLIPOP)
         return performAction(target.createAction(AccessibilityNodeInfo.ACTION_SET_TEXT, text))
     }
 
     @ScriptInterface
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     fun appendText(target: ActionTarget, text: String): Boolean {
         ScriptRuntime.requiresApi(Build.VERSION_CODES.LOLLIPOP)
         return performAction(target.createAction(UiObject.ACTION_APPEND_TEXT, text))
@@ -128,7 +181,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
     }
 
     @ScriptInterface
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     fun powerDialog(): Boolean {
         ScriptRuntime.requiresApi(Build.VERSION_CODES.LOLLIPOP)
         return performGlobalAction(AccessibilityService.GLOBAL_ACTION_POWER_DIALOG)
@@ -150,7 +202,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
     }
 
     @ScriptInterface
-    @RequiresApi(api = Build.VERSION_CODES.N)
     fun splitScreen(): Boolean {
         return performGlobalAction(AccessibilityService.GLOBAL_ACTION_TOGGLE_SPLIT_SCREEN)
     }
@@ -233,7 +284,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
      * Action to trigger dpad up keyevent.
      */
     @ScriptInterface
-//    @RequiresApi(Build.VERSION_CODES.Tiramisu)
     fun dpadUp(): Boolean {
 //        return performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_UP)
         // TODO: 待适配Api Tiramisu
@@ -244,7 +294,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
      * Action to trigger dpad down keyevent.
      */
     @ScriptInterface
-//    @RequiresApi(Build.VERSION_CODES.Tiramisu)
     fun dpadDown(): Boolean {
 //        return performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_DOWN)
         // TODO: 待适配Api Tiramisu
@@ -255,7 +304,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
      * Action to trigger dpad right keyevent.
      */
     @ScriptInterface
-//    @RequiresApi(Build.VERSION_CODES.Tiramisu)
     fun dpadRight(): Boolean {
 //        return performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_RIGHT)
         // TODO: 待适配Api Tiramisu
@@ -266,7 +314,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
      * Action to trigger dpad left keyevent.
      */
     @ScriptInterface
-//    @RequiresApi(Build.VERSION_CODES.Tiramisu)
     fun dpadLeft(): Boolean {
 //        return performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_LEFT)
         // TODO: 待适配Api Tiramisu
@@ -277,7 +324,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
      * Action to trigger dpad center keyevent.
      */
     @ScriptInterface
-//    @RequiresApi(Build.VERSION_CODES.Tiramisu)
     fun dpadCenter(): Boolean {
 //        return performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_CENTER)
         // TODO: 待适配Api Tiramisu
@@ -285,19 +331,16 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
     }
 
     @ScriptInterface
-    @RequiresApi(api = Build.VERSION_CODES.N)
     fun gesture(start: Long, duration: Long, vararg points: IntArray): Boolean {
         prepareForGesture()
         return mGlobalActionAutomator.gesture(start, duration, *points)
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     fun gestureAsync(start: Long, duration: Long, vararg points: IntArray) {
         prepareForGesture()
         mGlobalActionAutomator.gestureAsync(start, duration, *points)
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     fun gestures(strokes: Any): Boolean {
         prepareForGesture()
         @Suppress("UNCHECKED_CAST")
@@ -305,7 +348,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
     }
 
     //如果这里用GestureDescription.StrokeDescription[]为参数，安卓7.0以下会因为找不到这个类而报错
-    @RequiresApi(api = Build.VERSION_CODES.N)
     fun gesturesAsync(strokes: Any) {
         prepareForGesture()
         @Suppress("UNCHECKED_CAST")
@@ -315,37 +357,34 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
     private fun prepareForGesture() {
         ScriptRuntime.requiresApi(24)
         if (!::mGlobalActionAutomator.isInitialized) {
-            mGlobalActionAutomator = GlobalActionAutomator(Handler(mScriptRuntime.loopers.servantLooper)) {
-                ensureAccessibilityServiceEnabled()
-                return@GlobalActionAutomator mAccessibilityBridge.service!!
-            }
+            mGlobalActionAutomator =
+                GlobalActionAutomator(Handler(mScriptRuntime.loopers.servantLooper)) {
+                    ensureAccessibilityServiceEnabled()
+                    return@GlobalActionAutomator mAccessibilityBridge.service!!
+                }
         }
         mGlobalActionAutomator.setScreenMetrics(mScreenMetrics)
     }
 
     @ScriptInterface
-    @RequiresApi(api = Build.VERSION_CODES.N)
     fun click(x: Int, y: Int): Boolean {
         prepareForGesture()
         return mGlobalActionAutomator.click(x, y)
     }
 
     @ScriptInterface
-    @RequiresApi(api = Build.VERSION_CODES.N)
     fun press(x: Int, y: Int, delay: Int): Boolean {
         prepareForGesture()
         return mGlobalActionAutomator.press(x, y, delay)
     }
 
     @ScriptInterface
-    @RequiresApi(api = Build.VERSION_CODES.N)
     fun longClick(x: Int, y: Int): Boolean {
         prepareForGesture()
         return mGlobalActionAutomator.longClick(x, y)
     }
 
     @ScriptInterface
-    @RequiresApi(api = Build.VERSION_CODES.N)
     fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, delay: Int): Boolean {
         prepareForGesture()
         return mGlobalActionAutomator.swipe(x1, y1, x2, y2, delay.toLong())
@@ -357,7 +396,6 @@ class SimpleActionAutomator(private val mAccessibilityBridge: AccessibilityBridg
         return service.performGlobalAction(action)
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     @ScriptInterface
     fun paste(target: ActionTarget): Boolean {
         ScriptRuntime.requiresApi(18)

@@ -17,11 +17,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FabPosition
@@ -239,7 +242,8 @@ private fun ConfigCard(model: BuildViewModel) {
                 val iconRes =
                     if (model.icon == null) painterResource(R.drawable.ic_add_white_48dp)
                     else rememberAsyncImagePainter(model.icon)
-                Image(painter = iconRes, contentDescription = stringResource(R.string.apk_icon),
+                Image(
+                    painter = iconRes, contentDescription = stringResource(R.string.apk_icon),
                     modifier = Modifier
                         .padding(8.dp)
                         .size(64.dp)
@@ -261,7 +265,7 @@ private fun PackagingOptionCard(model: BuildViewModel) {
             onValueChange = { model.abiList = it },
             label = stringResource(R.string.text_abi)
         )
-        CheckboxOption(model::useNodejs,"启用nodejs引擎")
+        CheckboxOption(model::useNodejs, "启用nodejs引擎")
         CheckboxOption(model::isRequiredOpenCv, stringResource(R.string.text_required_opencv))
         CheckboxOption(
             model::isRequiredMlKitOCR,
@@ -481,33 +485,65 @@ fun BuildingDialog(show: Boolean, model: BuildViewModel, onDismissRequest: () ->
     }
 
     @Composable
+    fun buildError() {
+        Row {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = null,
+                tint = Color(0xFFE53935)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(text = stringResource(R.string.text_build_failed))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "${model.buildDialogError?.message}")
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onDismissRequest) { Text(text = stringResource(R.string.ok)) }
+        }
+    }
+
+    @Composable
     fun buildFailed() {
-        onDismissRequest()
-        model.isShowBuildSuccessfullyDialog = false
         val outApk = model.outApk
         if (outApk?.isFile != true) {
             return
         }
-        MaterialAlertDialogBuilder(context)
-            .setTitle(R.string.text_build_successfully)
-            .setMessage(
-                stringResource(R.string.format_build_successfully, model.outputPath)
-            ).setPositiveButton(R.string.text_install) { _, _ ->
+        Row {
+            Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = null,
+                tint = Color(0xFF4CAF50)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(text = stringResource(R.string.text_build_successfully))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = stringResource(R.string.format_build_successfully, model.outputPath))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(R.string.text_exit))
+            }
+            TextButton(onClick = {
+                onDismissRequest()
                 IntentUtil.installApkOrToast(
                     context, outApk.absolutePath, AppFileProvider.AUTHORITY
                 )
-            }.setNegativeButton(R.string.text_exit) { _, _ -> }
-            .show()
+            }) { Text(text = stringResource(R.string.text_install)) }
+        }
     }
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        properties = if (model.isShowBuildDialog)
+            DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        else DialogProperties()
     ) {
         BuildCard(stringResource(R.string.text_build_apk)) {
             if (model.isShowBuildDialog) {
                 building()
             } else if (model.isShowBuildSuccessfullyDialog) {
                 buildFailed()
+            } else if (model.buildDialogError != null) {
+                buildError()
             } else {
                 prompt()
             }
@@ -519,7 +555,13 @@ fun BuildingDialog(show: Boolean, model: BuildViewModel, onDismissRequest: () ->
 fun FloatingMenu(model: BuildViewModel) {
     var isShow by remember { mutableStateOf(false) }
     BuildingDialog(show = isShow, model = model, onDismissRequest = { isShow = false })
-    FloatingActionButton(onClick = { isShow = true }) {
+    FloatingActionButton(onClick = {
+        model.isShowBuildSuccessfullyDialog = false
+        model.buildDialogError = null
+        model.buildDialogText = ""
+        model.isShowBuildDialog = false
+        isShow = true
+    }) {
         Icon(
             imageVector = Icons.Default.Done,
             contentDescription = stringResource(R.string.desc_done)

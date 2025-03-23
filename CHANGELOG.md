@@ -3,6 +3,32 @@ autoxjs 整个项目的一些更新日志,双版本号为稳定版（内容以�
 
 ## [Unreleased](https://github.com/kkevsekk1/AutoX/compare/7.0.5...HEAD) 未发布
 
+## [7.1.2] - 2025-3-22
+* 升级rhino到1.8.0
+* 循环运行修复
+* Upgrade gradle to 8.5.0, kotlin to 1.9.25
+* 删除大量过时的代码
+* 新增shizuku.runRhinoScript函数
+* 为nodejs添加app模块
+* 截图性能优化
+* 使打包应用支持shizku，打包对话框统一样式
+* 修复v4签名打包失败，模板app无用资源清理
+* 修复打包应用无法读取drawable和attr资源
+* 新增auto.takeScreenshot()，auto.takeScreenshotAsync()截图函数
+* 文档更新
+
+@[ozobiozobi](https://github.com/ozobiozobi)
+RootAutomator、布局层次分析页面 (#26)
+
+* 修复: 某些设备 RootAutomator 不生效
+
+设备名称存在空格时，RootAutomator 不生效
+
+* 修复: 布局层次分析页面返回无效
+
+* 将布局层次分析页面返回关闭改为展示边界
+
+---------
 ## [7.1.1] - 2025-2-23
 
 * 更换shell核心为Ktsh,移除runtime.getRootShell()

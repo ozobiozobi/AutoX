@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.edit
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -81,7 +82,7 @@ class SplashActivity : AppCompatActivity() {
         val pref = PreferenceManager.getDefaultSharedPreferences(this)
         val appVersion = packageManager.getPackageInfo(packageName, 0).versionCode
         val l = pref.getLong(Pref.KEY_APP_VERSION, -1)
-        pref.edit().putLong(Pref.KEY_APP_VERSION, appVersion.toLong()).apply()
+        pref.edit { putLong(Pref.KEY_APP_VERSION, appVersion.toLong()) }
         appVersion.toLong() != l
     }
     private val accessibilitySettingsLauncher =

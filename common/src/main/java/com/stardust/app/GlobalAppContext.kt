@@ -88,9 +88,8 @@ object GlobalAppContext {
     }
 
     @JvmStatic
-    @get:Synchronized
-    val appName: String
-        get() = try {
+    val appName: String by lazy {
+        try {
             val packageManager = get().packageManager
             val packageInfo = packageManager.getPackageInfo(
                 get().packageName, 0
@@ -98,8 +97,9 @@ object GlobalAppContext {
             packageManager.getApplicationLabel(packageInfo.applicationInfo).toString()
         } catch (e: Exception) {
             Log.e(TAG, e.stackTraceToString())
-            ""
+            "unknown app"
         }
+    }
 
 
     @JvmStatic
