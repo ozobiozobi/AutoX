@@ -7,9 +7,12 @@ import android.util.Log
 import com.stardust.util.Func1
 import java.io.*
 import java.nio.charset.Charset
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.*
 import kotlin.math.ln
 import kotlin.math.pow
+
 
 /**
  * Created by Stardust on 2017/4/1.
@@ -214,6 +217,27 @@ object PFiles {
     @JvmStatic
     fun copy(pathFrom: String, pathTo: String): Boolean {
         return copyStream(FileInputStream(pathFrom), pathTo)
+    }
+
+
+    fun copyDirectory(source: Path, target: Path) {
+        // 创建目标目录
+        if (Files.notExists(target)) {
+            Files.createDirectories(target)
+        }
+
+        Files.newDirectoryStream(source).use { stream ->
+            for (entry in stream) {
+                val newTarget: Path = target.resolve(entry.fileName)
+                if (Files.isDirectory(entry)) {
+                    // 如果是目录，递归拷贝
+                    copyDirectory(entry, newTarget)
+                } else {
+                    // 如果是文件，拷贝文件
+                    Files.copy(entry, newTarget)
+                }
+            }
+        }
     }
 
     @JvmStatic

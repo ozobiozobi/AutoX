@@ -22,6 +22,7 @@ import com.stardust.autojs.core.console.ConsoleImpl.LogListener
 import com.stardust.enhancedfloaty.ResizableExpandableFloatyWindow
 import com.stardust.util.MapBuilder
 import com.stardust.util.ViewUtils
+import java.util.LinkedList
 
 /**
  * Created by Stardust on 2017/5/2.
@@ -44,7 +45,7 @@ class ConsoleView : FrameLayout, LogListener {
     private lateinit var submitButton: Button
     private var mWindow: ResizableExpandableFloatyWindow? = null
     private var mShouldStopRefresh = false
-    private val mLogEntries = ArrayList<LogEntry>()
+    private val mLogEntries = LinkedList<LogEntry>()
     private var mLogSize = -1f
 
     constructor(context: Context) : super(context) {
@@ -143,9 +144,9 @@ class ConsoleView : FrameLayout, LogListener {
     }
 
     private fun refreshLog() {
-        if (mConsole == null) return
+        val console = mConsole ?: return
         val oldSize = mLogEntries.size
-        val logEntries = mConsole!!.allLogs
+        val logEntries = console.allLogs
         synchronized(logEntries) {
             val size = logEntries.size
             if (size == 0) {

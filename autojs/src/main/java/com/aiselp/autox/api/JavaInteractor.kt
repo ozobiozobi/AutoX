@@ -15,6 +15,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.reflect.full.createType
+import kotlin.reflect.full.isSupertypeOf
 
 
 class JavaInteractor(
@@ -99,21 +101,30 @@ class JavaInteractor(
         val javaObj = argList[0] as Any
         val methodName = argList[1] as String
         val javaArgs = (argList[2] as List<*>)
-        val argTpyes = javaArgs.map { it?.javaClass }
-        val method = javaObj.javaClass.methods.find {
+        val argTpyes = javaArgs.map { it?.let { it::class.createType() } }
+        val method = javaObj::class.members.find {
             if (it.name == methodName) {
-                if (it.parameterCount != argTpyes.size) return@find false
-                if (it.parameterCount == 0) return@find true
-                val parameterTypes = it.parameterTypes
-                for (i: Int in parameterTypes.indices) {
-                    if (argTpyes[i] == null) continue
-                    if (!parameterTypes[i].isAssignableFrom(argTpyes[i]!!)) return@find false
+                val parameterTypes = it.parameters
+                if (parameterTypes.size - 1 != argTpyes.size) return@find false
+                if (parameterTypes.size == 1) return@find true
+
+                for ((i, param) in parameterTypes.withIndex()) {
+                    if (i == 0) {
+                        //检查是否实例方法
+                        if (!param.type.isSupertypeOf(javaObj::class.createType()))
+                            return@find false
+                        continue
+                    }
+
+                    val argType = argTpyes[i - 1] ?: if (param.type.isMarkedNullable) continue
+                    else return@find false
+                    if (!param.type.isSupertypeOf(argType)) return@find false
                 }
                 true
             } else false
         }
         checkNotNull(method) { ScriptException("method not found ${javaObj.javaClass.name}$${methodName} args: $argTpyes") }
-        return { method.invoke(javaObj, *(javaArgs.toTypedArray())) }
+        return { method.call(javaObj, *(javaArgs.toTypedArray())) }
     }
 
     companion object {

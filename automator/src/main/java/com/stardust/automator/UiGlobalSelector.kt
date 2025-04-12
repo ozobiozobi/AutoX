@@ -1,12 +1,19 @@
 package com.stardust.automator
 
 import android.graphics.Rect
-import android.os.Build
-import com.stardust.automator.filter.*
+import com.stardust.automator.filter.BooleanFilter
+import com.stardust.automator.filter.BoundsFilter
+import com.stardust.automator.filter.ClassNameFilters
+import com.stardust.automator.filter.DescFilters
+import com.stardust.automator.filter.Filter
+import com.stardust.automator.filter.IdFilter
+import com.stardust.automator.filter.IntFilter
+import com.stardust.automator.filter.PackageNameFilter
+import com.stardust.automator.filter.Selector
+import com.stardust.automator.filter.TextFilters
 import com.stardust.automator.search.BFS
 import com.stardust.automator.search.DFS
 import com.stardust.automator.search.SearchAlgorithm
-import java.lang.IllegalArgumentException
 
 /**
  * Created by Stardust on 2017/3/8.
@@ -139,7 +146,7 @@ open class UiGlobalSelector {
         return this
     }
 
-    open fun packageNameMatches(regex: String): UiGlobalSelector {
+        open fun packageNameMatches(regex: String): UiGlobalSelector {
         mSelector.add(PackageNameFilter.matches(regex))
         return this
     }
@@ -162,7 +169,7 @@ open class UiGlobalSelector {
     fun drawingOrder(order: Int): UiGlobalSelector {
         mSelector.add(object : Filter {
             override fun filter(node: UiObject): Boolean {
-                return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && node.drawingOrder == order
+                return node.drawingOrder == order
             }
 
             override fun toString(): String {

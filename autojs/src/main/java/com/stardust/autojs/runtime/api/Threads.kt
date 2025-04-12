@@ -1,7 +1,5 @@
 package com.stardust.autojs.runtime.api
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.stardust.autojs.core.looper.Loopers
 import com.stardust.autojs.core.looper.MainThreadProxy
 import com.stardust.autojs.core.looper.TimerThread
@@ -36,7 +34,6 @@ class Threads(private val mRuntime: ScriptRuntime) {
         return if (thread === mainThread) mMainThreadProxy else thread
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     fun runTaskForThreadPool(runnable: BaseFunction) = coroutineScope.launch {
         if (mTaskCount.addAndGet(1) == 1L) mRuntime.loopers.addAsyncTask(looperTask)
         try {

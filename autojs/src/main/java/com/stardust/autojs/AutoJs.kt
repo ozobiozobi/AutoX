@@ -129,6 +129,10 @@ abstract class AutoJs protected constructor(protected val application: Applicati
     }
 
     protected open fun createRuntime(): ScriptRuntimeV2 {
+        return createRuntimeBuilder().build()
+    }
+
+    fun createRuntimeBuilder(): ScriptRuntimeV2.Builder {
         return ScriptRuntimeV2.Builder().also {
             it.console = ConsoleImpl(uiHandler, globalConsole)
             it.screenCaptureRequester = mScreenCaptureRequester
@@ -137,7 +141,7 @@ abstract class AutoJs protected constructor(protected val application: Applicati
             it.appUtils = appUtils
             it.engineService = scriptEngineService
             it.shellSupplier = Supplier<AbstractShell> { Shell(mContext, true) }
-        }.build()
+        }
     }
 
     private fun registerActivityLifecycleCallbacks() {

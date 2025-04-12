@@ -35,7 +35,7 @@ open class ConsoleImpl @JvmOverloads constructor(
     private val mUiHandler: UiHandler,
     val globalConsole: Console? = null
 ) : AbstractConsole() {
-    private var maxLines = -1
+    private var maxLines = 5 * 1000
 
     interface LogListener {
         fun onNewLog(logEntry: LogEntry)

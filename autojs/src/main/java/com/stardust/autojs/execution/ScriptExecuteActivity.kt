@@ -68,7 +68,7 @@ class ScriptExecuteActivity : AppCompatActivity() {
             doExecution()
         } catch (pending: ContinuationPending) {
             pending.printStackTrace()
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             onException(e)
         }
     }

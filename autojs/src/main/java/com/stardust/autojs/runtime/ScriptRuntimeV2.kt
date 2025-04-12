@@ -1,5 +1,6 @@
 package com.stardust.autojs.runtime
 
+import android.os.Handler
 import com.stardust.autojs.ScriptEngineService
 import com.stardust.autojs.annotation.ScriptInterface
 import com.stardust.autojs.annotation.ScriptVariable
@@ -15,9 +16,13 @@ import com.stardust.autojs.runtime.api.AppUtils
 import com.stardust.autojs.runtime.api.Console
 import com.stardust.autojs.runtime.api.ConsoleExtension
 import com.stardust.autojs.runtime.api.Events
+import com.stardust.autojs.runtime.api.GoogleMLKit
 import com.stardust.autojs.runtime.api.Keyboard
+import com.stardust.autojs.runtime.api.Paddle
+import com.stardust.autojs.runtime.api.Plugins
 import com.stardust.autojs.runtime.api.ScriptShell
 import com.stardust.autojs.runtime.api.Sensors
+import com.stardust.autojs.runtime.api.SevenZip
 import com.stardust.autojs.runtime.api.Shizuku
 import com.stardust.autojs.runtime.api.Threads
 import com.stardust.autojs.runtime.api.Timers
@@ -27,6 +32,7 @@ import com.stardust.pio.UncheckedIOException
 import com.stardust.util.ClipboardUtil
 import com.stardust.util.Supplier
 import com.stardust.util.UiHandler
+import org.mozilla.javascript.Context
 import org.mozilla.javascript.ContextFactory
 import org.mozilla.javascript.RhinoException
 import java.io.BufferedReader
@@ -40,10 +46,20 @@ class ScriptRuntimeV2(val builder: Builder) : ScriptRuntime(builder) {
     lateinit var consoleExtension: ConsoleExtension
     val shell = ScriptShell()
     val keyboard = Keyboard()
-    val shizuku = Shizuku()
+    val shizuku = Shizuku(uiHandler.context)
+
+    val gmlkit: GoogleMLKit = GoogleMLKit()
+
+    val paddle: Paddle = Paddle()
 
     @ScriptVariable
-    val automator = SimpleActionAutomator(accessibilityBridge, this)
+    val plugins: Plugins = Plugins(uiHandler.context, this)
+
+    @ScriptVariable
+    var zips: SevenZip = SevenZip()
+
+    @ScriptVariable
+    val automator = SimpleActionAutomator(accessibilityBridge) { Handler(loopers.servantLooper) }
 
 
     init {
@@ -103,9 +119,21 @@ class ScriptRuntimeV2(val builder: Builder) : ScriptRuntime(builder) {
         }
     }
 
+    fun evalInContext(script: String, context: Any): Any? {
+        val currentContext = Context.getCurrentContext()
+        return currentContext.evaluateString(
+            Context.toObject(context, topLevelScope),
+            script,
+            "eval",
+            1,
+            null
+        )
+    }
+
     override fun onExit() {
         super.onExit()
         shell.recycle(console)
+        shizuku.recycle()
         consoleExtension.close()
         ObjectWatcher.default.watch(this, engines.myEngine().toString() + "::" + TAG)
     }

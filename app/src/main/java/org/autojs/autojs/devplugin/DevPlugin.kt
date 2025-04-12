@@ -53,7 +53,7 @@ object DevPlugin {
         }
     }
 
-    private val gson get() = Gson()
+    private val gson = Gson()
     const val SERVER_PORT = 9317
     private const val CLIENT_VERSION = 2
     private const val TAG = "DevPlugin"
@@ -148,7 +148,7 @@ object DevPlugin {
 
     suspend fun startUSBDebug() {
         withContext(Dispatchers.IO) {
-            server.listen(SERVER_PORT, "/", host = "127.0.0.1") {
+            server.listen(SERVER_PORT, "/", host = "0.0.0.0") {
                 newConnection(this)
             }
         }

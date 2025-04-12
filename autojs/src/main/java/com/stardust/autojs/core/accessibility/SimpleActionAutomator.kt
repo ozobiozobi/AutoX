@@ -31,7 +31,7 @@ import kotlinx.coroutines.runBlocking
 
 class SimpleActionAutomator(
     private val mAccessibilityBridge: AccessibilityBridge,
-    private val mScriptRuntime: ScriptRuntime
+    private val handler: () -> Handler
 ) {
 
     private lateinit var mGlobalActionAutomator: GlobalActionAutomator
@@ -358,7 +358,7 @@ class SimpleActionAutomator(
         ScriptRuntime.requiresApi(24)
         if (!::mGlobalActionAutomator.isInitialized) {
             mGlobalActionAutomator =
-                GlobalActionAutomator(Handler(mScriptRuntime.loopers.servantLooper)) {
+                GlobalActionAutomator(handler()) {
                     ensureAccessibilityServiceEnabled()
                     return@GlobalActionAutomator mAccessibilityBridge.service!!
                 }

@@ -247,9 +247,9 @@ private fun StableModeSwitch() {
         onCheckedChange = {
             if (it) scope.launch { dialog.show() }
             PreferenceManager.getDefaultSharedPreferences(context)
-                .edit()
-                .putBoolean(context.getString(R.string.key_stable_mode), it)
-                .apply()
+                .edit {
+                    putBoolean(context.getString(R.string.key_stable_mode), it)
+                }
             isStableMode = it
         }
     )
@@ -444,9 +444,9 @@ private fun VolumeDownControlSwitch() {
         checked = enable,
         onCheckedChange = {
             PreferenceManager.getDefaultSharedPreferences(context)
-                .edit()
-                .putBoolean(context.getString(R.string.key_use_volume_control_record), it)
-                .apply()
+                .edit {
+                    putBoolean(context.getString(R.string.key_use_volume_control_record), it)
+                }
             enable = it
         }
     )
@@ -472,9 +472,9 @@ private fun AutoBackupSwitch() {
         checked = enable,
         onCheckedChange = {
             PreferenceManager.getDefaultSharedPreferences(context)
-                .edit()
-                .putBoolean(context.getString(R.string.key_auto_backup), it)
-                .apply()
+                .edit {
+                    putBoolean(context.getString(R.string.key_auto_backup), it)
+                }
             enable = it
         }
     )

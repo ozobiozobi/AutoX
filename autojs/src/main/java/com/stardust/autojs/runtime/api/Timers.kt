@@ -1,6 +1,7 @@
 package com.stardust.autojs.runtime.api
 
 import android.os.Looper
+import android.util.Log
 import com.stardust.autojs.core.looper.Timer
 import com.stardust.autojs.core.looper.TimerThread
 import com.stardust.autojs.runtime.ScriptRuntime
@@ -23,9 +24,14 @@ class Timers(private val mRuntime: ScriptRuntime) {
         } else if (thread is TimerThread) {
             return thread.timer
         } else if (thread === Looper.getMainLooper().thread) {
-            uiTimer
+            return uiTimer
+        } else {
+            Log.d(
+                LOG_TAG,
+                "unknown thread: $thread class: ${thread.javaClass.name} use mainTimer"
+            )
+            return mainTimer
         }
-        return mainTimer
     }
 
     fun setTimeout(vararg args: Any?): Int {

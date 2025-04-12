@@ -140,7 +140,7 @@ class NodeModuleResolver(
             try {
                 runtime.createV8Module(name, loadFn.call<V8ValueObject>(null, require, name))
             } catch (e: Exception) {
-                Log.e(TAG, "loadNpmPackageModule Error:\n ${e.stackTraceToString()}")
+                //Log.e(TAG, "loadNpmPackageModule Error:\n ${e.stackTraceToString()}")
                 null
             }
         }

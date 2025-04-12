@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import com.stardust.autojs.script.JavaScriptSource;
 import com.stardust.autojs.script.ScriptSource;
@@ -43,11 +44,15 @@ public class LoopBasedJavaScriptEngine extends RhinoJavaScriptEngine {
                 if (callback != null)
                     callback.onResult(o);
             } catch (ContinuationPending ignored) {
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 if (callback == null) {
                     throw e;
                 } else {
-                    callback.onException(e);
+                    if (e instanceof Exception) {
+                        callback.onException((Exception) e);
+                    } else {
+                        callback.onException(new Exception(e));
+                    }
                 }
             }
 

@@ -3,6 +3,7 @@ package com.aiselp.autox.engine
 import android.content.Context
 import android.util.Log
 import com.aiselp.autox.api.JavaInteractor
+import com.aiselp.autox.api.JsAccessibility
 import com.aiselp.autox.api.JsApp
 import com.aiselp.autox.api.JsClipManager
 import com.aiselp.autox.api.JsDialogs
@@ -24,9 +25,11 @@ import com.caoccao.javet.node.modules.NodeModuleProcess
 import com.caoccao.javet.values.V8Value
 import com.caoccao.javet.values.reference.V8ValueError
 import com.caoccao.javet.values.reference.V8ValuePromise
+import com.stardust.autojs.AutoJs
 import com.stardust.autojs.BuildConfig
 import com.stardust.autojs.engine.ScriptEngine
 import com.stardust.autojs.execution.ExecutionConfig
+import com.stardust.autojs.runtime.ScriptRuntimeV2
 import com.stardust.autojs.runtime.exception.ScriptException
 import com.stardust.autojs.script.ScriptSource
 import com.stardust.pio.PFiles
@@ -37,13 +40,17 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.io.File
+import java.util.concurrent.locks.ReentrantLock
 
 class NodeScriptEngine(val context: Context) :
     ScriptEngine.AbstractScriptEngine<ScriptSource>(), ScriptEngine.EngineEvent {
     val runtime: NodeRuntime = V8Host.getNodeInstance().createV8Runtime()
 
     private val tags = mutableMapOf<String, Any?>()
-    private val v8Locker = runtime.v8Locker
+    private val v8Locker = run {
+        runtime.v8Locker
+        ReentrantLock()
+    }
     private val config: ExecutionConfig by lazy {
         tags[ExecutionConfig.tag] as ExecutionConfig
     }
@@ -55,6 +62,11 @@ class NodeScriptEngine(val context: Context) :
     val scope = CoroutineScope(Dispatchers.Default)
     val eventLoopQueue = EventLoopQueue(runtime)
     val promiseFactory = V8PromiseFactory(runtime, eventLoopQueue)
+    val builder: ScriptRuntimeV2.Builder? = try {
+        AutoJs.instance.createRuntimeBuilder()
+    } catch (e: Throwable) {
+        null
+    }
 
     init {
         Log.i(TAG, "node version: ${runtime.version}")
@@ -118,6 +130,7 @@ class NodeScriptEngine(val context: Context) :
         nativeApiManager.register(JsDialogs(eventLoopQueue, context, scope))
         nativeApiManager.register(JsEngines(this))
         nativeApiManager.register(JsApp(context))
+        nativeApiManager.register(JsAccessibility(builder))
         nativeApiManager.initialize(runtime, global)
     }
 
@@ -219,11 +232,15 @@ class NodeScriptEngine(val context: Context) :
     }
 
     override fun destroy() {
+        if (scope.isActive) scope.cancel()
         val code = if (scope.isActive) 0 else 1
-        runtime.getExecutor("process.emit('exit',$code);").executeVoid()
+        try {
+            runtime.getExecutor("process.emit('exit',$code);").executeVoid()
+        } catch (e: Throwable) {
+            Log.w(TAG, e.stackTraceToString())
+        }
         eventLoopQueue.recycle()
         nativeApiManager.recycle(runtime, runtime.globalObject)
-        if (scope.isActive) scope.cancel()
         if (!runtime.isClosed) {
             runtime.lowMemoryNotification()
             runtime.close()

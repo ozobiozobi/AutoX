@@ -3,6 +3,18 @@ autoxjs 整个项目的一些更新日志,双版本号为稳定版（内容以�
 
 ## [Unreleased](https://github.com/kkevsekk1/AutoX/compare/7.0.5...HEAD) 未发布
 
+## [7.1.3] - 2025-3-30
+* 新增webview.loadLocalFile() 函数
+* 新增shizuku.openAccessibility()函数
+* 文件列表相关问题修复
+* 打包相关问题修复
+* 部分v6模块改用ts编写
+* 修复一个emitter线程问题 #45
+* 修复ui脚本不能捕获来自kotlin部分异常
+* 设置默认控制台最大数量为5000
+* 支持v7 api测试,迁移automator模块,为nodejs添加accessibility模块
+* 提供额外vscode调试api
+
 ## [7.1.2] - 2025-3-22
 * 升级rhino到1.8.0
 * 循环运行修复

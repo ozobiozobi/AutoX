@@ -7,22 +7,15 @@ import android.util.Log;
 
 import com.stardust.app.GlobalAppContext;
 import com.stardust.autojs.R;
-import com.stardust.autojs.BuildConfig;
-import com.stardust.autojs.ScriptEngineService;
 import com.stardust.autojs.annotation.ScriptVariable;
 import com.stardust.autojs.core.accessibility.AccessibilityBridge;
-import com.stardust.autojs.core.accessibility.SimpleActionAutomator;
 import com.stardust.autojs.core.accessibility.UiSelector;
 import com.stardust.autojs.core.activity.ActivityInfoProvider;
 import com.stardust.autojs.core.image.Colors;
-import com.stardust.autojs.core.image.capture.ScreenCaptureRequester;
 import com.stardust.autojs.core.looper.Loopers;
 import com.stardust.autojs.core.permission.Permissions;
-import com.stardust.autojs.core.util.ProcessShell;
-import com.stardust.autojs.rhino.AndroidClassLoader;
 import com.stardust.autojs.rhino.TopLevelScope;
 import com.stardust.autojs.rhino.continuation.Continuation;
-import com.stardust.autojs.runtime.api.AbstractShell;
 import com.stardust.autojs.runtime.api.AppUtils;
 import com.stardust.autojs.runtime.api.Console;
 import com.stardust.autojs.runtime.api.Device;
@@ -31,39 +24,22 @@ import com.stardust.autojs.runtime.api.Engines;
 import com.stardust.autojs.runtime.api.Events;
 import com.stardust.autojs.runtime.api.Files;
 import com.stardust.autojs.runtime.api.Floaty;
-import com.stardust.autojs.runtime.api.GoogleMLKit;
 import com.stardust.autojs.runtime.api.Images;
 import com.stardust.autojs.runtime.api.Media;
-import com.stardust.autojs.runtime.api.Plugins;
 import com.stardust.autojs.runtime.api.Sensors;
-import com.stardust.autojs.runtime.api.SevenZip;
 import com.stardust.autojs.runtime.api.Threads;
 import com.stardust.autojs.runtime.api.Timers;
 import com.stardust.autojs.runtime.api.UI;
 import com.stardust.autojs.runtime.exception.ScriptEnvironmentException;
 import com.stardust.autojs.runtime.exception.ScriptException;
 import com.stardust.autojs.runtime.exception.ScriptInterruptedException;
-import com.stardust.autojs.util.ObjectWatcher;
-import com.stardust.concurrent.VolatileDispose;
 import com.stardust.lang.ThreadCompat;
-import com.stardust.pio.UncheckedIOException;
-import com.stardust.util.ClipboardUtil;
 import com.stardust.util.ScreenMetrics;
 import com.stardust.util.SdkVersionUtil;
-import com.stardust.util.Supplier;
 import com.stardust.util.UiHandler;
 
-import org.mozilla.javascript.ContextFactory;
-import org.mozilla.javascript.RhinoException;
-import org.mozilla.javascript.ScriptStackElement;
 import org.mozilla.javascript.Scriptable;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -130,23 +106,12 @@ public abstract class ScriptRuntime {
     public final Files files;
 
     @ScriptVariable
-    public SevenZip zips;
-
-    @ScriptVariable
     public Sensors sensors;
 
     @ScriptVariable
     public final Media media;
 
-    @ScriptVariable
-    public final Plugins plugins;
-
-    @ScriptVariable
-    public final GoogleMLKit gmlkit;
-//    @ScriptVariable
-//    public final Paddle paddle;
-
-    private Images images;
+    private final Images images;
 
     private static WeakReference<Context> applicationContext;
     private Map<String, Object> mProperties = new ConcurrentHashMap<>();
@@ -169,10 +134,6 @@ public abstract class ScriptRuntime {
         floaty = new Floaty(uiHandler, ui, this);
         files = new Files(this);
         media = new Media(context, this);
-        plugins = new Plugins(context, this);
-        zips = new SevenZip();
-        gmlkit = new GoogleMLKit();
-//        paddle = new Paddle();
     }
 
     public abstract void init();
