@@ -10,12 +10,15 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.aiselp.autox.test.activicy.TestLogActivity
 import com.aiselp.autox.test.utils.getGlobalProperty
+import com.aiselp.autox.test.utils.openScriptAsset
 import com.aiselp.autox.test.utils.toDouble
 import com.stardust.autojs.AutoJs
 import com.stardust.autojs.R
 import com.stardust.autojs.ScriptEngineService
 import com.stardust.autojs.ScriptResultViewer
 import com.stardust.autojs.TestAutojs
+import com.stardust.autojs.execution.ExecutionConfig
+import com.stardust.autojs.script.ScriptFile
 import com.stardust.autojs.script.ScriptSource
 import com.stardust.autojs.script.StringScriptSource
 import kotlinx.coroutines.Job
@@ -130,6 +133,18 @@ class V6ScriptTest {
             resultViewer.waitForSuccess()
         }
         job.cancel()
+    }
+
+    @Test
+    fun zips(): Unit = runBlocking {
+        val file = openScriptAsset(application, "$v6AccessDir/zips.js")
+        val resultViewer = ScriptResultViewer()
+        getScriptEngineService().execute(
+            ScriptFile(file.toFile()).toSource(),
+            resultViewer,
+            ExecutionConfig(workingDirectory = file.parent.toString())
+        )
+        resultViewer.waitForSuccess()
     }
 
     companion object {

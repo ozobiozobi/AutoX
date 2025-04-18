@@ -7,7 +7,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 
-class ScriptResultViewer : ScriptExecutionListener {
+class ScriptResultViewer(val defaultTimeout: Long = 1000 * 60) : ScriptExecutionListener {
     var result = CompletableDeferred<Any?>()
     val finish = Job()
 
@@ -24,11 +24,11 @@ class ScriptResultViewer : ScriptExecutionListener {
         finish.complete()
     }
 
-    suspend fun waitForFinish() {
-        finish.join()
-    }
 
-    suspend fun waitForFinish(timeout: Long, outAction: () -> Unit) {
+    suspend fun waitForFinish(
+        timeout: Long = defaultTimeout,
+        outAction: (() -> Unit) = {}
+    ) {
         try {
             withTimeout(timeout) { finish.join() }
         } catch (e: TimeoutCancellationException) {
@@ -37,11 +37,10 @@ class ScriptResultViewer : ScriptExecutionListener {
         }
     }
 
-    suspend fun waitForSuccess(): Any? {
-        return result.await()
-    }
-
-    suspend fun waitForSuccess(timeout: Long, outAction: () -> Unit): Any? {
+    suspend fun waitForSuccess(
+        timeout: Long = defaultTimeout,
+        outAction: (() -> Unit) = {}
+    ): Any? {
         try {
             return withTimeout(timeout) {
                 result.await()

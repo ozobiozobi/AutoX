@@ -206,7 +206,7 @@ open class EWebView : FrameLayout, SwipeRefreshLayout.OnRefreshListener,
             mProgressBar.progress = 0
             mProgressBar.visibility = VISIBLE
             if (isConsole) {
-                val jsCode = "javascript: " + readAssetsTxt(context, "modules/vconsole.min.js")
+                val jsCode = "javascript: " + readAssetsTxt(context, "js/vconsole.min.js")
                 Log.i("onPageStarted", jsCode)
                 view.evaluateJavascript(jsCode) {
                     Log.i("evaluateJavascript", "JS　return:  $it")
@@ -225,7 +225,7 @@ open class EWebView : FrameLayout, SwipeRefreshLayout.OnRefreshListener,
             )
             if (isRescale) {
                 val jsCode =
-                    "javascript: " + readAssetsTxt(context, "modules/rescale.js")
+                    "javascript: " + readAssetsTxt(context, "js/rescale.js")
                 view.evaluateJavascript(jsCode) {
                     Log.i("evaluateJavascript", "JS　return:  $it")
                 }

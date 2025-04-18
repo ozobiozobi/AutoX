@@ -9,11 +9,11 @@ export type XML = {
 export interface Ui {
     [key: string]: any
     view?: android.View
-    run(a: () => void): void
+    run<T>(a: () => T): T
     post(a: () => void, delay?: number): void
     layout(content: XML | string): void
     layoutFile(file: string): void
-    inflate(xml: XML | string, parent: any, attachToParent: boolean): any
+    inflate(xml: XML | string, parent?: any, attachToParent?: boolean): any
     registerWidget(name: string, widget: () => any): any
     setContentView(view: android.View): void
     findById: (id: string) => android.View | null
@@ -64,7 +64,7 @@ const findView = function (id: string): android.View | null {
     return ui.findById(id);
 }
 
-const run = function (action: () => void) {
+const run = function <T>(action: () => T) {
     if (ui.isUiThread()) {
         return action();
     }
@@ -84,7 +84,7 @@ const run = function (action: () => void) {
     if (err) {
         throw err;
     }
-    return result;
+    return result as T;
 }
 
 const post = function (action: () => void, delay?: number) {
@@ -163,7 +163,7 @@ var ui: Ui = {
     layoutFile: function (file: string) {
         ui.layout(files.read(file));
     },
-    inflate: function (xml: XML | string, parent: any, attachToParent: boolean) {
+    inflate: function (xml: XML | string, parent?: any, attachToParent?: boolean) {
         if (typeof (xml) !== 'string') {
             xml = xml.toXMLString();
         }

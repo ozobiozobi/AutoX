@@ -98,6 +98,42 @@ namespace Autox {
         height: number
         width: number
     }
+    interface AppUtils {
+        fileProviderAuthority: string | null
+        launchPackage(packageName: string): boolean
+        sendLocalBroadcastSync(intent: android.Intent)
+        launchApp(appName: string): boolean
+        getPackageName(appName: string): string | null
+        getInstalledPackages(flags: number): Array<PackageInfo>
+        getAppName(packageName: string): string | null
+        uninstall(packageName: string)
+        viewFile(path: string)
+        editFile(path: string)
+        getUriForFile(path: string): android.Uri
+        openUrl(url: string)
+        openAppSetting(packageName: string): boolean
+    }
+    interface ScriptExecution {
+        getEngine(): ScriptEngine
+        getConfig(): any
+    }
+    interface ScriptEngine {
+        isDestroyed(): boolean
+        forceStop()
+        cwd(): string | null
+        getSource(): ScriptSource
+        emit(eventName: string, ...args: any[]): void
+    }
+    interface Engines {
+        [key: string]: any
+        stopAll(): void
+        stopAllAndToast(): void
+        myEngine(): ScriptEngine
+        all(): ScriptEngine[]
+        execScript(name: string, script: string, config?: EngineConfig): ScriptExecution
+        execScriptFile(path: string, config?: EngineConfig): ScriptExecution
+        execAutoFile(path: string, config?: EngineConfig): ScriptExecution
+    }
     interface Runtime {
         shizuku: Shizuku
         shell: Shell
@@ -111,10 +147,17 @@ namespace Autox {
         bridges: any
         automator: Automator
         accessibilityBridge: any
+        app: AppUtils
+        engines: Engines
+        dialogs: any
+        events: Events
+        plugins: any
+        sensors: any
         getScreenMetrics(): any
         evalInContext(script: string, context: Object): any
         getUiHandler: () => any
         selector(): UiSelector
+        getProperty(name: string): any
     }
 
     interface JsBridge {

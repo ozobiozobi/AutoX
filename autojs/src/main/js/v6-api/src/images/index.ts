@@ -1,6 +1,5 @@
 import { asGlobal } from "@/utils"
 
-const ResultAdapter = eval('require("result_adapter");')
 type Image = Autox.Image
 type ImageFormat = 'png' | 'jpeg' | 'webp' | 'jpg'
 type Color = string | number

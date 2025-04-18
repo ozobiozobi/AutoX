@@ -15,7 +15,6 @@ import com.stardust.autojs.core.image.Colors;
 import com.stardust.autojs.core.looper.Loopers;
 import com.stardust.autojs.core.permission.Permissions;
 import com.stardust.autojs.rhino.TopLevelScope;
-import com.stardust.autojs.rhino.continuation.Continuation;
 import com.stardust.autojs.runtime.api.AppUtils;
 import com.stardust.autojs.runtime.api.Console;
 import com.stardust.autojs.runtime.api.Device;
@@ -277,14 +276,6 @@ public abstract class ScriptRuntime {
 
     public Object removeProperty(String key) {
         return mProperties.remove(key);
-    }
-
-    public Continuation createContinuation() {
-        return Continuation.Companion.create(this, mTopLevelScope);
-    }
-
-    public Continuation createContinuation(Scriptable scope) {
-        return Continuation.Companion.create(this, scope);
     }
 
 }

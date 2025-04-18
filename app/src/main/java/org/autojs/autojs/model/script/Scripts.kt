@@ -3,7 +3,7 @@ package org.autojs.autojs.model.script
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
+import android.util.Log
 import com.stardust.app.GlobalAppContext
 import com.stardust.autojs.execution.ExecutionConfig
 import com.stardust.autojs.execution.ScriptExecution
@@ -38,6 +38,7 @@ object Scripts {
     const val EXTRA_EXCEPTION_MESSAGE = "message"
     const val EXTRA_EXCEPTION_LINE_NUMBER = "lineNumber"
     const val EXTRA_EXCEPTION_COLUMN_NUMBER = "columnNumber"
+    private const val TAG = "Scripts"
 
     val FILE_FILTER = FileFilter { file ->
         file.isDirectory || file.name.endsWith(".js")
@@ -108,15 +109,20 @@ object Scripts {
         edit(context, ScriptFile(path))
     }
 
-    fun run(file: ScriptFile): ScriptExecution? {
+    @JvmOverloads
+    fun run(
+        file: File,
+        config: ExecutionConfig = ExecutionConfig(workingDirectory = file.parent)
+    ): ScriptExecution? {
         return try {
             AutoJs.getInstance().scriptEngineService.execute(
-                file.toSource(),
-                ExecutionConfig(workingDirectory = file.parent)
+                ScriptFile(file).toSource(), config
             )
         } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(GlobalAppContext.get(), e.message, Toast.LENGTH_LONG).show()
+            Log.e(TAG, e.stackTraceToString())
+            EngineController.scope.launch(Dispatchers.Main) {
+                toast(GlobalAppContext.get(), e.message)
+            }
             null
         }
 
@@ -130,7 +136,7 @@ object Scripts {
                 ExecutionConfig(workingDirectory = Pref.getScriptDirPath())
             )
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, e.stackTraceToString())
             EngineController.scope.launch(Dispatchers.Main) {
                 toast(GlobalAppContext.get(), e.message)
             }

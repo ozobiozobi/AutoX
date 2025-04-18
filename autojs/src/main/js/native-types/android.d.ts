@@ -3,8 +3,10 @@ namespace android {
     interface PackageInfo { }
     interface Context {
         startActivity: (intent: Intent) => void;
+        startService: (intent: Intent) => void;
         sendBroadcast: (intent: Intent) => void;
         getPackageName(): string
+        getPackageManager(): PackageManager
     }
     interface IntentClass extends java.JavaClass {
         new(): Intent

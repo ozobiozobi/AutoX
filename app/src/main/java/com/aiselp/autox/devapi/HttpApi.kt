@@ -49,7 +49,7 @@ class HttpApi(val context: PipelineContext<Unit, ApplicationCall>) {
         withContext(Dispatchers.IO) {
             val cacheDir = GlobalAppContext.get().cacheDir
             val project = File(cacheDir, dirName!!)
-            PFiles.deleteFilesOfDir(project)
+            PFiles.deleteRecursively(project)
             val inputStream = call.receiveStream()
             Zip.unzip(inputStream, cacheDir)
             EngineController.launchProject(ProjectConfig.fromProject(project)!!)
@@ -63,7 +63,7 @@ class HttpApi(val context: PipelineContext<Unit, ApplicationCall>) {
         withContext(Dispatchers.IO) {
             val cacheDir = GlobalAppContext.get().cacheDir
             val project = File(cacheDir, dirName)
-            PFiles.deleteFilesOfDir(project)
+            PFiles.deleteRecursively(project)
             Zip.unzip(call.receiveStream(), cacheDir)
             val scriptDirPath = org.autojs.autojs.Pref.getScriptDirPath()
             val saveDir = File(scriptDirPath, saveName)
@@ -83,9 +83,9 @@ class HttpApi(val context: PipelineContext<Unit, ApplicationCall>) {
 
     companion object {
         private const val TAG = "HttpApi"
-        private const val path = "/api/v1"
+        private const val PATH = "/api/v1"
         fun Route.installRoute() {
-            post(path) {
+            post(PATH) {
                 val connectionPoint = this.call.mutableOriginConnectionPoint
                 Log.i(TAG, connectionPoint.remoteHost + ":" + connectionPoint.port)
                 HttpApi(this).handle()

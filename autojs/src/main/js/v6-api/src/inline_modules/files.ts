@@ -29,3 +29,5 @@ scope.open = function (path: string, mode?: FileMode,
         return files.open(path, mode, encoding, bufferSize);
     }
 };
+
+export default files as Autox.Files

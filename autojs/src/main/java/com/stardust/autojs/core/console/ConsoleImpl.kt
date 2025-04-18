@@ -4,7 +4,6 @@ import android.content.Intent
 import android.graphics.Color
 import android.text.TextUtils
 import android.util.Log
-import android.view.WindowManager
 import com.stardust.autojs.R
 import com.stardust.autojs.annotation.ScriptInterface
 import com.stardust.autojs.runtime.ScriptRuntimeV2.Companion.getStackTrace
@@ -13,16 +12,11 @@ import com.stardust.autojs.runtime.api.Console
 import com.stardust.autojs.util.FloatingPermission
 import com.stardust.autojs.util.isUiThread
 import com.stardust.enhancedfloaty.FloatyService
-import com.stardust.enhancedfloaty.ResizableExpandableFloatyWindow
 import com.stardust.util.UiHandler
 import com.stardust.util.ViewUtil
 import io.reactivex.rxjava3.subjects.PublishSubject
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.lang.ref.WeakReference
@@ -47,36 +41,8 @@ open class ConsoleImpl @JvmOverloads constructor(
     val allLogs: ArrayList<LogEntry> = ArrayList()
     private val mIdCounter = AtomicInteger(0)
     private val mConsoleFloaty = ConsoleFloaty(this)
-
-    @OptIn(DelicateCoroutinesApi::class)
-    private val mFloatyWindow = object : ResizableExpandableFloatyWindow(mConsoleFloaty) {
-        val scope = GlobalScope
-
-        @Volatile
-        var isShown = false
-        override fun onCreate(service: FloatyService, manager: WindowManager) {
-            super.onCreate(service, manager)
-            expand()
-            windowBridge.updatePosition(0, 0)
-        }
-
-        fun show() {
-            if (isShown) return
-            val window = this
-            scope.launch(Dispatchers.Main) {
-                FloatyService.addWindow(window)
-                isShown = true
-            }
-        }
-
-        fun hide() {
-            if (!isShown) return
-            scope.launch(Dispatchers.Main) {
-                close()
-                isShown = false
-            }
-        }
-    }
+    @get:ScriptInterface
+    val floatyWindow = ConsoleFloatyWindow(mConsoleFloaty)
 
     private var mLogListener: WeakReference<LogListener?>? = null
     private var mConsoleView: WeakReference<ConsoleView?>? = null
@@ -176,7 +142,7 @@ open class ConsoleImpl @JvmOverloads constructor(
 
     override fun show(isAutoHide: Boolean) {
         setAutoHide(isAutoHide)
-        if (mFloatyWindow.isShown) {
+        if (floatyWindow.isShown) {
             return
         }
         if (!FloatingPermission.canDrawOverlays(mUiHandler.context)) {
@@ -185,7 +151,7 @@ open class ConsoleImpl @JvmOverloads constructor(
             return
         }
         startFloatyService()
-        mFloatyWindow.show()
+        floatyWindow.show()
     }
 
     override fun show() {
@@ -198,7 +164,7 @@ open class ConsoleImpl @JvmOverloads constructor(
     }
 
     override fun hide() {
-        mFloatyWindow.hide()
+        floatyWindow.hide()
     }
 
     override fun setMaxLines(maxLines: Int) {
@@ -208,7 +174,7 @@ open class ConsoleImpl @JvmOverloads constructor(
 
     fun setSize(w: Int, h: Int) {
         mUiHandler.post {
-            if (mFloatyWindow.isShown) {
+            if (floatyWindow.isShown) {
                 ViewUtil.setViewMeasure(mConsoleFloaty.expandedView, w, h)
             }
         }
@@ -216,7 +182,7 @@ open class ConsoleImpl @JvmOverloads constructor(
 
     fun setPosition(x: Int, y: Int) {
         mUiHandler.post {
-            if (mFloatyWindow.isShown) mFloatyWindow.windowBridge.updatePosition(x, y)
+            if (floatyWindow.isShown) floatyWindow.windowBridge.updatePosition(x, y)
         }
     }
 
@@ -227,7 +193,7 @@ open class ConsoleImpl @JvmOverloads constructor(
         }
         return runBlocking {
             consoleInput = CompletableDeferred()
-            if (!mFloatyWindow.isShown) {
+            if (!floatyWindow.isShown) {
                 show()
             }
             withTimeout(2000) {

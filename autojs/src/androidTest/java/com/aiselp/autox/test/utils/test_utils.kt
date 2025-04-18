@@ -35,9 +35,19 @@ fun createTestFile(name: String, content: String): Path {
     val tempDirectory =
         Files.createDirectories(
             application.cacheDir.toPath().resolve("test_script"),
-
         )
     val file = tempDirectory.resolve(name)
     file.writeText(content)
     return file
+}
+
+fun openScriptAsset(context: android.content.Context, assetName: String): Path {
+    val tempDirectory =
+        Files.createTempDirectory(context.cacheDir.toPath(), "test_script")
+    val file = tempDirectory.resolve(assetName)
+    Files.createDirectories(file.parent)
+    context.assets.open(assetName).use {
+        Files.write(file, it.readBytes())
+        return file
+    }
 }

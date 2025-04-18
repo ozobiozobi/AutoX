@@ -92,6 +92,7 @@ module.exports = function (runtime, scope) {
     }
 
 
+    console.floatyWindow = rtConsole.floatyWindow
     console.show = rtConsole.show.bind(rtConsole);
     console.hide = rtConsole.hide.bind(rtConsole);
     console.clear = rtConsole.clear.bind(rtConsole);

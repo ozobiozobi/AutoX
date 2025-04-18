@@ -47,6 +47,8 @@ class ScriptShell {
     fun recycle(console: Console) {
         suShell?.exit()
         shShell?.exit()
+        shShell = null
+        suShell = null
         var num = 0
         shellList.forEach {
             if (it.isAlive()) {

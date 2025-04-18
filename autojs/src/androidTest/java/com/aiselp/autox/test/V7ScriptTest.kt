@@ -14,23 +14,12 @@ import com.stardust.autojs.script.ScriptFile
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.nio.file.Files
 import java.nio.file.Path
 
 @RunWith(AndroidJUnit4::class)
 @MediumTest
 class V7ScriptTest {
     val application: Application = ApplicationProvider.getApplicationContext()
-
-    fun openScriptAsset(assetName: String): Path {
-        val tempDirectory =
-            Files.createTempDirectory(application.cacheDir.toPath(), "test_script")
-        val file = tempDirectory.resolve(assetName)
-        application.assets.open("${v7AccessDir}/$assetName").use {
-            Files.write(file, it.readBytes())
-            return file
-        }
-    }
 
     private fun runScript(file: Path, l: ScriptExecutionListener): ScriptExecution {
         return AutoJs.instance.scriptEngineService.execute(

@@ -3,6 +3,12 @@ autoxjs 整个项目的一些更新日志,双版本号为稳定版（内容以�
 
 ## [Unreleased](https://github.com/kkevsekk1/AutoX/compare/7.0.5...HEAD) 未发布
 
+## [7.1.4] - 2025-4-13
+* 新增console.floatyWindow.setTouchable方法 #67
+* bug修复 #68 #62 #59
+* 迁移app,http,engines,storages,dialogs,$zip,$crypto模块
+* 移除旧版协程实现,迁移events,plugins,Sensors模块
+
 ## [7.1.3] - 2025-3-30
 * 新增webview.loadLocalFile() 函数
 * 新增shizuku.openAccessibility()函数

@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import com.stardust.autojs.annotation.ScriptInterface
 import com.stardust.autojs.runtime.api.AbstractShell
 import com.stardust.autojs.runtime.exception.UIBlockingException
+import com.stardust.autojs.servicecomponents.EngineController
 import com.stardust.autojs.util.isUiThread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -67,13 +68,20 @@ class Shell2(initCommand: String) : Closeable {
     fun isAlive(): Boolean = sh.isAlive()
 
     @ScriptInterface
-    fun exit() = runBlocking {
-        withTimeout(2000) {
-            initStatus.join()
+    fun exit() {
+        if (initStatus.isCompleted) {
             exitSubprocess(pid!!)
             Process.killProcess(pid!!)
-        }
-        close()
+            close()
+        } else
+            EngineController.scope.launch {
+                withTimeout(1000) {
+                    initStatus.join()
+                    exitSubprocess(pid!!)
+                    Process.killProcess(pid!!)
+                }
+                close()
+            }
     }
 
     private fun exitSubprocess(pid: Int) {

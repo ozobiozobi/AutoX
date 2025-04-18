@@ -52,9 +52,11 @@ open class Drawables {
     }
 
     fun loadAttrResources(context: Context, value: String): Drawable? {
-        val field = attrClass.getField(value.substring(1))
+        val field = attrClass.getField(
+            if (value.startsWith("?attr/")) value.substring(6) else value.substring(1)
+        )
         val attr = intArrayOf(
-            field.get(null) as Int
+            field.getInt(null)
         )
         val ta = context.obtainStyledAttributes(attr)
         val drawable = ta.getDrawable(0 /* index */)
