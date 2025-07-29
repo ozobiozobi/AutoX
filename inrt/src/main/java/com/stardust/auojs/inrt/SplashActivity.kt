@@ -4,13 +4,10 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,18 +21,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.edit
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -43,24 +37,11 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.aiselp.autox.engine.NodeScriptEngine
-import com.aiselp.autox.ui.material3.components.AlertDialog
-import com.aiselp.autox.ui.material3.components.DialogController
 import com.aiselp.autox.ui.material3.theme.AppTheme
 import com.google.gson.Gson
-import com.stardust.app.GlobalAppContext
-import com.stardust.app.permission.BackgroundStartPermission
-import com.stardust.app.permission.DrawOverlaysPermission
-import com.stardust.app.permission.DrawOverlaysPermission.launchCanDrawOverlaysSettings
-import com.stardust.app.permission.Permissions
-import com.stardust.app.permission.PermissionsSettingsUtil.launchAppPermissionsSettings
-import com.stardust.auojs.inrt.autojs.AccessibilityServiceTool
-import com.stardust.auojs.inrt.autojs.AccessibilityServiceTool1
 import com.stardust.auojs.inrt.autojs.AutoJs
 import com.stardust.auojs.inrt.launch.GlobalProjectLauncher
 import com.stardust.autojs.project.ProjectConfig
-import com.stardust.autojs.util.PermissionUtil
-import com.stardust.autojs.util.StoragePermissionResultContract
-import com.stardust.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -73,6 +54,7 @@ import org.autojs.autoxjs.inrt.R
  */
 
 class SplashActivity : AppCompatActivity() {
+    val permissionCheck = PermissionCheck()
 
     companion object {
         const val TAG = "SplashActivity"
@@ -85,71 +67,8 @@ class SplashActivity : AppCompatActivity() {
         pref.edit { putLong(Pref.KEY_APP_VERSION, appVersion.toLong()) }
         appVersion.toLong() != l
     }
-    private val accessibilitySettingsLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            checkAccessibilityServices()
-            checkSpecialPermissions()
-        }
-
-    private fun checkAccessibilityServices() {
-        if (AccessibilityServiceTool.isAccessibilityServiceEnabled(this)) {
-            permissionsResult[Permissions.ACCESSIBILITY_SERVICES] = true
-            toast(this, getString(R.string.text_accessibility_service_turned_on))
-        } else {
-            toast(this, getString(R.string.text_accessibility_service_is_not_turned_on))
-        }
-    }
-
-    private val backgroundStartSettingsLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (BackgroundStartPermission.isBackgroundStartAllowed(this)) {
-                permissionsResult[Permissions.BACKGROUND_START] = true
-            }
-            checkSpecialPermissions()
-        }
-
-    private val drawOverlaysSettingsLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (DrawOverlaysPermission.isCanDrawOverlays(this)) {
-                permissionsResult[Permissions.DRAW_OVERLAY] = true
-            }
-            checkSpecialPermissions()
-        }
-
-    @RequiresApi(Build.VERSION_CODES.R)
-    private val storagePermissionLauncher =
-        registerForActivityResult(StoragePermissionResultContract()) {
-            checkSpecialPermissions()
-        }
 
     private lateinit var projectConfig: ProjectConfig
-
-    private val permissionsResult = mutableMapOf<String, Boolean>()
-
-    private fun checkSpecialPermissions() {
-        if (permissionsResult.all { it.value }) {
-            runScript()
-        } else {
-            for ((key, value) in permissionsResult) {
-                if (!value) {
-                    when (key) {
-                        Permissions.ACCESSIBILITY_SERVICES -> {
-                            lifecycleScope.launch { requestAccessibilityServiceDialog.show() }
-                        }
-
-                        Permissions.BACKGROUND_START -> {
-                            lifecycleScope.launch { requestBackgroundStartDialog.show() }
-                        }
-
-                        Permissions.DRAW_OVERLAY -> {
-                            lifecycleScope.launch { requestDrawOverlaysDialog.show() }
-                        }
-                    }
-                    break
-                }
-            }
-        }
-    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -169,9 +88,7 @@ class SplashActivity : AppCompatActivity() {
         var slug by mutableStateOf(getString(R.string.powered_by_autojs))
         setContent {
             AppTheme(dynamicColor = true) {
-                requestDrawOverlaysDialog.Dialog()
-                requestAccessibilityServiceDialog.Dialog()
-                requestBackgroundStartDialog.Dialog()
+                permissionCheck.Dialog()
                 Column(
                     Modifier
                         .fillMaxSize()
@@ -232,121 +149,16 @@ class SplashActivity : AppCompatActivity() {
                 delay(1000)
             }
             initModuleResource.join()
-            readSpecialPermissionConfiguration()
-            requestExternalStoragePermission()
-        }
-    }
-
-    private fun readSpecialPermissionConfiguration() {
-        projectConfig.launchConfig.permissions.forEach { permission ->
-            when (permission) {
-                Permissions.ACCESSIBILITY_SERVICES -> {
-                    permissionsResult[permission] =
-                        AccessibilityServiceTool.isAccessibilityServiceEnabled(this)
-                }
-
-                Permissions.BACKGROUND_START -> {
-                    permissionsResult[permission] =
-                        BackgroundStartPermission.isBackgroundStartAllowed(this)
-                }
-
-                Permissions.DRAW_OVERLAY -> {
-                    permissionsResult[permission] = DrawOverlaysPermission.isCanDrawOverlays(this)
-                }
+            if (permissionCheck.checkPermission(
+                    this@SplashActivity, projectConfig.launchConfig.permissions
+                )
+            ) {
+                runScript()
+            } else {
+                permissionCheck.requestPermission(
+                    this@SplashActivity, projectConfig.launchConfig.permissions
+                ) { runScript() }
             }
-        }
-    }
-
-    private fun requestExternalStoragePermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !PermissionUtil.checkStoragePermission()) {
-            PermissionUtil.showPermissionDialog(this) {
-                storagePermissionLauncher.launch(Unit)
-            }
-        } else checkSpecialPermissions()
-    }
-
-    private val requestDrawOverlaysDialog = object : DialogController() {
-        override val properties: DialogProperties = DialogProperties(
-            dismissOnClickOutside = false,
-            dismissOnBackPress = false,
-        )
-
-        override fun onPositiveClick() {
-            showState = false
-            drawOverlaysSettingsLauncher.launchCanDrawOverlaysSettings(packageName)
-        }
-
-        @Composable
-        fun Dialog() {
-            AlertDialog(
-                title = stringResource(R.string.text_required_floating_window_permission),
-                content = stringResource(R.string.text_required_floating_window_permission),
-                positiveText = stringResource(R.string.text_to_open),
-                negativeText = stringResource(R.string.text_cancel),
-                onNegativeClick = { finish() }
-            )
-        }
-    }
-
-    private val requestBackgroundStartDialog = object : DialogController() {
-        override val properties: DialogProperties = DialogProperties(
-            dismissOnClickOutside = false,
-            dismissOnBackPress = false
-        )
-
-        @Composable
-        fun Dialog() {
-            AlertDialog(
-                title = stringResource(R.string.text_requires_background_start),
-                content = stringResource(R.string.text_requires_background_start_desc),
-                positiveText = stringResource(R.string.text_to_open),
-                onPositiveClick = {
-                    showState = false
-                    backgroundStartSettingsLauncher.launchAppPermissionsSettings(packageName)
-                },
-                negativeText = stringResource(R.string.text_cancel),
-                onNegativeClick = { finish() }
-            )
-        }
-    }
-
-    private val requestAccessibilityServiceDialog = object : DialogController() {
-        override val properties = DialogProperties(
-            dismissOnClickOutside = false,
-            dismissOnBackPress = false
-        )
-
-        override fun show() {
-            lifecycleScope.launch {
-                val enabled = withContext(Dispatchers.IO) {
-                    AccessibilityServiceTool1.enableAccessibilityServiceByRootAndWaitFor(2000)
-                }
-                if (enabled) {
-                    permissionsResult[Permissions.ACCESSIBILITY_SERVICES] = true
-                    toast(this@SplashActivity, R.string.text_accessibility_service_turned_on)
-                    checkSpecialPermissions()
-                    return@launch
-                }
-                super.show()
-            }
-        }
-
-        @Composable
-        fun Dialog() {
-            AlertDialog(
-                title = stringResource(R.string.text_need_to_enable_accessibility_service),
-                content = stringResource(
-                    R.string.explain_accessibility_permission,
-                    GlobalAppContext.appName
-                ),
-                positiveText = stringResource(R.string.text_to_open),
-                onPositiveClick = {
-                    showState = false
-                    accessibilitySettingsLauncher.launch(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                },
-                negativeText = stringResource(R.string.text_cancel),
-                onNegativeClick = { finish() }
-            )
         }
     }
 

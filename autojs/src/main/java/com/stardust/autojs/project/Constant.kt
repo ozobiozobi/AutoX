@@ -42,6 +42,8 @@ object Constant {
         const val ACCESSIBILITY_SERVICES = "accessibility_services"
         const val BACKGROUND_START = "background_start"
         const val DRAW_OVERLAY = "draw_overlay"
+        const val EXTERNAL_STORAGE = "external_storage"
+        const val PUBLISH_NOTIFICATION = "publish_notification"
     }
 
     object Protocol {

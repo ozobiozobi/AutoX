@@ -1,7 +1,6 @@
 package com.aiselp.autox.ui.material3
 
 import android.app.Activity
-import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
@@ -55,6 +54,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.aiselp.autox.apkbuilder.ApkKeyStore
+import com.aiselp.autox.build.BuildApkAssetDialog
+import com.aiselp.autox.ui.material3.components.AlertDialog
 import com.aiselp.autox.ui.material3.components.BaseDialog
 import com.aiselp.autox.ui.material3.components.BuildCard
 import com.aiselp.autox.ui.material3.components.CheckboxOption
@@ -62,7 +63,6 @@ import com.aiselp.autox.ui.material3.components.DialogController
 import com.aiselp.autox.ui.material3.components.DialogTitle
 import com.aiselp.autox.ui.material3.components.InputBox
 import com.aiselp.autox.ui.material3.components.M3TopAppBar
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.stardust.util.IntentUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -87,6 +87,7 @@ fun BuildPage(viewModel: BuildViewModel) {
         }
     }
 
+    remember { BuildApkAssetDialog() }.Dialog()
 
     BackHandler { finishDialog.exitCheck() }
     Scaffold(topBar = {
@@ -110,6 +111,7 @@ fun BuildPage(viewModel: BuildViewModel) {
             ConfigCard(model = viewModel)
             PackagingOptionCard(model = viewModel)
             RunConfigCard(model = viewModel)
+            SpecialPermissionsCard(model = viewModel)
             EncryptCard(model = viewModel)
             SignatureCard(model = viewModel)
         }
@@ -121,12 +123,23 @@ fun RowScope.Actions(model: BuildViewModel) {
     val scope = rememberCoroutineScope()
     var saveing by remember { mutableStateOf(false) }
     var finished by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+    val dialogController = DialogController()
+
+    dialogController.AlertDialog(
+        title = stringResource(R.string.text_alert),
+        positiveText = stringResource(R.string.text_save),
+        onPositiveClick = { model.saveConfig(); dialogController.dismiss() },
+        negativeText = stringResource(R.string.text_cancel),
+        onNegativeClick = { dialogController.dismiss() },
+        neutralText = stringResource(R.string.text_save_as_project),
+        onNeutralClick = { model.saveAsProject();dialogController.dismiss() },
+        content = stringResource(R.string.text_select_save_mode),
+    )
     IconButton(
         enabled = !saveing and !finished,
         onClick = {
             if (model.isSingleFile) {
-                showSaveDialog(context, model)
+                dialogController.show()
                 return@IconButton
             }
             scope.launch {
@@ -305,10 +318,7 @@ private fun RunConfigCard(model: BuildViewModel) {
             stringResource(id = R.string.text_stable_mode) to model::isStableMode,
             stringResource(id = R.string.text_hideLogs) to model::isHideLogs,
             stringResource(id = R.string.text_volumeUpcontrol) to model::isVolumeUpControl,
-            stringResource(id = R.string.text_required_accessibility_service) to model::isRequiredAccessibilityServices,
             stringResource(id = R.string.text_hide_accessibility_services) to model::isHideAccessibilityServices,
-            stringResource(id = R.string.text_required_background_start) to model::isRequiredBackgroundStart,
-            stringResource(id = R.string.text_required_draw_overlay) to model::isRequiredDrawOverlay,
             stringResource(id = R.string.text_display_splash) to model::displaySplash
         )) {
             CheckboxOption(v, t)
@@ -344,6 +354,34 @@ private fun RunConfigCard(model: BuildViewModel) {
             onValueChange = { model.serviceDesc = it },
             label = stringResource(id = R.string.text_service_desc_text),
             maxLines = 8,
+        )
+    }
+}
+
+@Composable
+fun SpecialPermissionsCard(model: BuildViewModel) {
+    BuildCard(stringResource(R.string.special_permissions_configuration)) {
+        Text(stringResource(R.string.special_permissions_configuration_desc))
+        Spacer(modifier = Modifier.height(8.dp))
+        CheckboxOption(
+            model::isRequiredAccessibilityServices,
+            stringResource(id = R.string.accessibility_service)
+        )
+        CheckboxOption(
+            model::isRequiredBackgroundStart,
+            stringResource(id = R.string.background_window_permission)
+        )
+        CheckboxOption(
+            model::isRequiredDrawOverlay,
+            stringResource(id = R.string.draw_overlay_permission)
+        )
+        CheckboxOption(
+            model::isRequiredFileManagerPermission,
+            stringResource(id = R.string.text_file_manager_permission)
+        )
+        CheckboxOption(
+            model::isRequiredPublishNotificationPermission,
+            stringResource(id = R.string.text_publish_notification_permission)
         )
     }
 }
@@ -589,22 +627,4 @@ private fun DialogController.FinishDialog(model: BuildViewModel) {
     ) {
         Text(text = stringResource(R.string.edit_exit_without_save_warn))
     }
-}
-
-fun showSaveDialog(context: Context, model: BuildViewModel) {
-    val list = arrayOf(
-        context.getString(R.string.text_save),
-        context.getString(R.string.text_save_as_project),
-        context.getString(R.string.cancel)
-    )
-    MaterialAlertDialogBuilder(context)
-        .setTitle(R.string.text_select_save_mode)
-        .setItems(list) { dialog, which ->
-            when (which) {
-                0 -> model.saveConfig()
-                1 -> model.saveAsProject()
-                else -> {}
-            }
-            dialog.dismiss()
-        }.show()
 }

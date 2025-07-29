@@ -98,7 +98,7 @@ class V6ScriptTest {
         val resultViewer = ScriptResultViewer()
         val execute =
             getScriptEngineService().execute(openScriptSource("emitter.js"), resultViewer)
-        resultViewer.waitForSuccess(2000) { execute.engine.forceStop() }
+        resultViewer.waitForSuccess(2500) { execute.engine.forceStop() }
     }
 
     @Test

@@ -21,7 +21,15 @@
     <string name="text_drawer_open">打开侧拉菜单</string>
     <string name="text_drawer_close">关闭侧拉菜单</string>
     <string name="no_read_phone_state_permissin">没有读取设备信息权限</string>
-    <string name="foreground_notification_title">脚本服务</string>
-
+    <string name="foreground_notification_title">脚本服务运行中</string>
+    <string name="foreground_notification_text">点击进入主界面</string>
+    <string name="draw_overlay_permission">悬浮窗权限</string>
+    <string name="background_window_permission">后台弹出界面权限</string>
+    <string name="accessibility_service">无障碍服务</string>
+    <string name="text_file_manager_permission">所有文件访问权限</string>
+    <string name="text_publish_notification_permission">发送通知权限</string>
+    <string name="text_permission_prompt">权限提示</string>
+    <string name="text_permission_prompt_content">此应用需要以下权限才能运行</string>
+    <string name="exit">退出</string>
 
 </resources>

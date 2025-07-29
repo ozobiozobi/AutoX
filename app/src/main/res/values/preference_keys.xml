@@ -2,7 +2,6 @@
 <resources>
     <string name="key_auto_backup" translatable="false">key_auto_back</string>
     <string name="key_night_mode" translatable="false">key_night_mode</string>
-    <string name="key_foreground_servie" translatable="false">key_foreground_service</string>
     <string name="key_script_dir_path" translatable="false">key_script_dir_path</string>
     <string name="key_documentation_source" translatable="false">key_documentation_source</string>
     <string name="key_enable_observe_key" translatable="false">key_enable_observe_key</string>

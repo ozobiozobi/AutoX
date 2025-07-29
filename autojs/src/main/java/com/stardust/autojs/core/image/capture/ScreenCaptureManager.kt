@@ -1,13 +1,15 @@
 package com.stardust.autojs.core.image.capture
 
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
+import android.os.IBinder
 import com.stardust.app.OnActivityResultDelegate
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.delay
 import java.util.concurrent.CancellationException
 
 class ScreenCaptureManager : ScreenCaptureRequester {
@@ -20,6 +22,7 @@ class ScreenCaptureManager : ScreenCaptureRequester {
             screenCapture?.setOrientation(orientation, context)
             return
         }
+
         val result = if (context is OnActivityResultDelegate.DelegateHost && context is Activity) {
             ScreenCaptureRequester.ActivityScreenCaptureRequester(
                 context.onActivityResultDelegateMediator, context
@@ -33,15 +36,38 @@ class ScreenCaptureManager : ScreenCaptureRequester {
             }
             result.await()
         }
+
+        // 使用服务绑定确保服务就绪
+        val serviceConnected = CompletableDeferred<Unit>()
+        val connection = object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                try {
+                    // 服务已连接，安全获取mediaProjection
+                    mediaProjection =
+                        (context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager)
+                            .getMediaProjection(Activity.RESULT_OK, result)
+                    CaptureForegroundService.setMediaProjection(context, mediaProjection!!)
+                    screenCapture = ScreenCapturer(mediaProjection!!, orientation)
+                } finally {
+                    serviceConnected.complete(Unit)
+                    context.unbindService(this)
+                }
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+                // 服务意外断开时处理
+                serviceConnected.completeExceptionally(IllegalStateException("Service disconnected unexpectedly"))
+            }
+        }
+
+        // 绑定服务并等待连接
         context.startService(Intent(context, CaptureForegroundService::class.java))
-        delay(100)
-        mediaProjection =
-            (context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager).getMediaProjection(
-                Activity.RESULT_OK,
-                result
-            )
-        CaptureForegroundService.mediaProjection = mediaProjection
-        screenCapture = ScreenCapturer(mediaProjection!!, orientation)
+        context.bindService(
+            Intent(context, CaptureForegroundService::class.java),
+            connection,
+            Context.BIND_AUTO_CREATE
+        )
+        serviceConnected.await()
     }
 
     override fun recycle() {

@@ -8,4 +8,4 @@ import com.stardust.app.GlobalAppContext
  */
 
 @SuppressLint("StaticFieldLeak")
-object GlobalProjectLauncher: AssetsProjectLauncher("project", GlobalAppContext.get())
+val GlobalProjectLauncher = AssetsProjectLauncher("project", GlobalAppContext.get())

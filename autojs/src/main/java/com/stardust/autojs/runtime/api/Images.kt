@@ -9,6 +9,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.os.Looper
 import android.util.Base64
+import android.util.Log
 import android.view.Gravity
 import com.stardust.autojs.annotation.ScriptVariable
 import com.stardust.autojs.core.image.ColorFinder
@@ -58,7 +59,8 @@ class Images(
             captureScreen()
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            mScriptRuntime.toast(e.message)
+            Log.e(Images::class.java.name, "请求截图权限失败", e)
             false
         }
     }

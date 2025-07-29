@@ -174,7 +174,6 @@
             android:theme="@style/M3AppTheme" />
         <activity
             android:name="org.autojs.autojs.ui.log.LogActivityKt"
-            android:process="@string/text_script_process_name"
             android:theme="@style/M3AppTheme" />
         <activity android:name="org.autojs.autojs.ui.shortcut.ShortcutIconSelectActivity" />
         <activity android:name="org.autojs.autojs.ui.timing.TimedTaskSettingActivity" />
@@ -320,7 +319,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name="org.autojs.autojs.ui.floating.FloatyService"
+            android:name="org.autojs.autojs.ui.floating.FloatyAutoService"
             android:process="@string/text_script_process_name" />
 
         <receiver

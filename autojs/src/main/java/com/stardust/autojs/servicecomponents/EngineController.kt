@@ -112,6 +112,13 @@ object EngineController {
         serviceConnection.stopAllScript()
     }
 
+    /**
+     * 通知AutoJs子进程退出
+     */
+    fun appExit() = scope.launch {
+        serviceConnection.appExit()
+    }
+
     fun registerGlobalConsoleListener(
         listener: BinderConsoleListener,
         scheduler: Scheduler = Schedulers.newThread()

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.Parcel
 import android.util.Log
+import com.stardust.app.service.AbstractAutoService.Companion.stopAllServices
 import com.stardust.autojs.AutoJs
 import com.stardust.autojs.IndependentScriptService
 import com.stardust.autojs.core.shizuku.ShizukuClient
@@ -28,6 +29,7 @@ class ScriptBinder(service: IndependentScriptService, val scope: CoroutineScope)
                 Action.RUN_SCRIPT.id -> runScript(data)
                 Action.STOP_SCRIPT.id -> stopScript(data)
                 Action.STOP_ALL_SCRIPT.id -> stopAllScript()
+                Action.APP_EXIT.id -> appExit()
                 Action.REGISTER_GLOBAL_SCRIPT_LISTENER.id -> registerGlobalScriptListener(data)
                 Action.REGISTER_GLOBAL_CONSOLE_LISTENER.id -> registerGlobalConsoleListener(data)
                 Action.NOTIFICATION_LISTENER_SERVICE_STATUS.id -> notificationListenerServiceStatus(
@@ -40,6 +42,12 @@ class ScriptBinder(service: IndependentScriptService, val scope: CoroutineScope)
             Log.d(TAG, "action id = $code, complete")
             return@runBlocking true
         }
+
+    private fun appExit() {
+        stopAllScript()
+        stopAllServices()
+        //todo 应用退出的其它处理可在此添加
+    }
 
     private fun getAllScriptTasks(data: Parcel, reply: Parcel) {
         val scriptExecutions = AutoJs.instance.scriptEngineService.scriptExecutions
@@ -122,7 +130,8 @@ class ScriptBinder(service: IndependentScriptService, val scope: CoroutineScope)
         REGISTER_GLOBAL_SCRIPT_LISTENER(7),
         REGISTER_GLOBAL_CONSOLE_LISTENER(8),
         NOTIFICATION_LISTENER_SERVICE_STATUS(9),
-        BIND_SHIZUKU_SERVICE(10);
+        BIND_SHIZUKU_SERVICE(10),
+        APP_EXIT(99);
     }
 
     companion object {

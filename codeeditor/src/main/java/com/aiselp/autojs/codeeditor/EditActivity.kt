@@ -100,6 +100,7 @@ class EditActivity : AppCompatActivity() {
             }
             AppTheme {
                 editorAppManager.loadDialog.Dialog()
+                editorAppManager.assetDownloadDialog.Dialog()
                 Box(modifier = Modifier.fillMaxSize()) {
                     AndroidView(factory = {
                         editorAppManager.webView

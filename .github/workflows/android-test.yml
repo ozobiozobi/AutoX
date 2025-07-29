@@ -24,10 +24,7 @@ jobs:
           node-version: 20.x
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          build-scan-publish: true
-          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
-          build-scan-terms-of-use-agree: "yes"
+
       - run: chmod 777 ./gradlew
 
       - name: Build Docs
@@ -37,8 +34,8 @@ jobs:
       - name: Build with Gradle
         run: | 
           ./gradlew autojs:buildJsModule
-          ./gradlew :inrt:assemble --scan
-          ./gradlew :app:assembleRelease --scan
+          ./gradlew :inrt:assemble
+          ./gradlew :app:assembleRelease
       - uses: actions/upload-artifact@v4
         with:
           name: apks(no signing)

@@ -1,7 +1,6 @@
 package com.stardust.autojs.project
 
 import android.content.Context
-import android.util.Log
 import androidx.annotation.Keep
 import com.google.gson.ExclusionStrategy
 import com.google.gson.FieldAttributes
@@ -112,7 +111,6 @@ data class ProjectConfig(
                     this.projectDirectory = projectDirectory.absolutePath
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "fromProject: $path \n${e.stackTraceToString()}")
                 null
             }
 

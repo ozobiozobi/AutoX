@@ -34,13 +34,16 @@ import com.aiselp.autox.ui.material3.BottomBar
 import com.aiselp.autox.ui.material3.DrawerPage
 import com.aiselp.autox.ui.material3.MainTopAppBar
 import com.aiselp.autox.ui.material3.theme.AppTheme
+import com.stardust.autojs.IndependentScriptService
 import com.stardust.autojs.util.PermissionUtil
 import com.stardust.autojs.util.StoragePermissionResultContract
 import com.stardust.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.autojs.autojs.Pref
 import org.autojs.autojs.timing.TimedTaskScheduler
+import org.autojs.autojs.ui.floating.FloatyWindowManger
 import org.autojs.autojs.ui.main.components.DocumentPageMenuButton
 import org.autojs.autojs.ui.main.scripts.ScriptListFragment
 import org.autojs.autojs.ui.main.task.TaskManagerFragmentKt
@@ -63,6 +66,18 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         Log.i("MainActivity", "Pid: ${Process.myPid()}")
+
+        if (Pref.isForegroundServiceEnabled()) {
+            IndependentScriptService.startForeground(this)
+        } else {
+            IndependentScriptService.stopForeground(this)
+        }
+
+        if (Pref.isFloatingMenuShown()) {
+            if (!FloatyWindowManger.showCircularMenu()) Pref.setFloatingMenuShown(false)
+        } else {
+            FloatyWindowManger.hideCircularMenu()
+        }
 
         setContent {
             val scope = rememberCoroutineScope()

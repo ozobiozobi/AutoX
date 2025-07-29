@@ -21,13 +21,13 @@ import com.aiselp.autox.ui.material3.components.BackTopAppBar
 import com.aiselp.autox.ui.material3.theme.AppTheme
 import com.stardust.autojs.core.console.ConsoleImpl
 import com.stardust.autojs.core.console.ConsoleView
-import org.autojs.autojs.autojs.AutoJs
+import com.stardust.autojs.servicecomponents.ScriptServiceConnection
 import org.autojs.autoxjs.R
 
 
 open class LogActivity : AppCompatActivity() {
     private lateinit var consoleView: ConsoleView
-    private val consoleImpl: ConsoleImpl by lazy { AutoJs.getInstance().globalConsole }
+    private val consoleImpl: ConsoleImpl by lazy { ScriptServiceConnection.GlobalConnection.consoleImpl }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

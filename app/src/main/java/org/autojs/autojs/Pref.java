@@ -1,5 +1,7 @@
 package org.autojs.autojs;
 
+import static com.stardust.autojs.core.pref.PrefKey.KEY_FOREGROUND_SERVICE;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Environment;
@@ -184,7 +186,7 @@ public class Pref {
     }
 
     public static boolean isForegroundServiceEnabled() {
-        return def().getBoolean(getString(R.string.key_foreground_servie), false);
+        return def().getBoolean(KEY_FOREGROUND_SERVICE, false);
     }
 
     public static void setCode(String value) {

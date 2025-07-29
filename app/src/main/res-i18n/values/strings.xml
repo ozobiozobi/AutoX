@@ -258,7 +258,6 @@
     <string name="text_required_terminal_emulator">终端模拟器</string>
     <string name="text_is_encrypt">简单加密js文件</string>
     <string name="text_encrypt_options">加密选项</string>
-    <string name="text_required_background_start">需要后台弹出界面权限</string>
     <string name="text_required_draw_overlay">需要悬浮窗权限</string>
     <string name="text_volumeUpcontrol">音量上键结束任务</string>
     <string name="text_splash_text">启动界面文本</string>
@@ -555,4 +554,7 @@
     <string name="text_sign_plan">签名方案</string>
     <string name="text_copy_successfully">复制成功</string>
     <string name="text_copy_link">复制链接</string>
+    <string name="import_template_apk_desc">当前版本不包含模板apk资源，请前往下载（template.apk）并导入</string>
+    <string name="special_permissions_configuration">特殊权限配置</string>
+    <string name="special_permissions_configuration_desc">勾选以下权限要求会让打包的app启动时向用户申请并取得权限后才能运行</string>
 </resources>

@@ -7,20 +7,37 @@ import android.content.ServiceConnection
 import android.os.Binder
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
+import com.stardust.app.GlobalAppContext
 import com.stardust.autojs.IndependentScriptService
+import com.stardust.autojs.core.console.ConsoleImpl
+import com.stardust.autojs.core.console.LogEntry
 import com.stardust.autojs.execution.ExecutionConfig
+import com.stardust.util.UiHandler
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
 class ScriptServiceConnection : ServiceConnection {
     val binderConsoleListener = BinderConsoleListener.ClientInterface()
-    var reBind: (() -> Unit)? = null
-    lateinit var service: IBinder
+    var binding: CompletableJob? = null
+    var service: IBinder? = null
+    var application: Context? = null
     private val connected = Job()
+    val consoleImpl: ConsoleImpl =
+        object : ConsoleImpl(UiHandler(GlobalAppContext.get())), BinderConsoleListener {
+            override fun onPrintln(log: LogEntry) {
+                println(log.level, log.content)
+            }
+        }.apply {
+            binderConsoleListener.logPublish
+                .observeOn(AndroidSchedulers.mainThread()).subscribe(::onPrintln)
+        }
+
 
     @Volatile
     var isConnected = false
@@ -28,10 +45,16 @@ class ScriptServiceConnection : ServiceConnection {
 
     @OptIn(DelicateCoroutinesApi::class)
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        check(service != null) { "service is null" }
         this.service = service
         isConnected = true
+        binding?.complete()
         connected.complete()
+        binderConsoleListener.logPublish.onNext(
+            LogEntry(
+                level = Log.INFO,
+                content = "Script service connected"
+            )
+        )
         GlobalScope.launch {
             registerGlobalConsoleListener(binderConsoleListener)
         }
@@ -39,11 +62,18 @@ class ScriptServiceConnection : ServiceConnection {
 
     override fun onServiceDisconnected(name: ComponentName?) {
         isConnected = false
+        binding = null
+        binderConsoleListener.logPublish.onNext(
+            LogEntry(
+                level = Log.ERROR,
+                content = "Script service disconnected"
+            )
+        )
     }
 
     private suspend fun <T> sendBinder(n: suspend TanBinder.() -> T): T {
         awaitConnected()
-        return ScriptBinder.connect(service, n)
+        return ScriptBinder.connect(service!!, n)
     }
 
     suspend fun getAllScriptTasks(): MutableList<TaskInfo> = sendBinder {
@@ -89,6 +119,11 @@ class ScriptServiceConnection : ServiceConnection {
         send()
     }
 
+    suspend fun appExit() = sendBinder {
+        action = ScriptBinder.Action.APP_EXIT.id
+        send()
+    }
+
     suspend fun registerGlobalScriptListener(listener: BinderScriptListener) = sendBinder {
         action = ScriptBinder.Action.REGISTER_GLOBAL_SCRIPT_LISTENER.id
         data.writeStrongBinder(listener.toBinder())
@@ -115,27 +150,31 @@ class ScriptServiceConnection : ServiceConnection {
 
     suspend fun awaitConnected() = withTimeout(3000) {
         if (isConnected) return@withTimeout
-        check(reBind != null) { "service is not connected" }
-        reBind!!.invoke()
-        while (!isConnected) {
-            delay(100)
+        if (binding == null) {
+            if (application != null) {
+                bind(application!!)
+            } else {
+                throw IllegalStateException("ScriptServiceConnection not bind")
+            }
         }
+        Log.d(TAG, "awaitConnected")
+        binding!!.join()
+    }
+
+    fun bind(context: Context) {
+        if (isConnected) return
+        application = context.applicationContext
+        context.applicationContext.bindService(
+            Intent(context, IndependentScriptService::class.java),
+            this,
+            Context.BIND_AUTO_CREATE
+        )
+        binding = Job()
+
     }
 
     companion object {
+        private const val TAG = "ScriptServiceConnection"
         val GlobalConnection by lazy { ScriptServiceConnection() }
-        fun start(context: Context) {
-            val applicationContext = context.applicationContext
-            applicationContext.startService(
-                Intent(applicationContext, IndependentScriptService::class.java)
-            )
-            GlobalConnection.reBind = {
-                applicationContext.bindService(
-                    Intent(context, IndependentScriptService::class.java),
-                    GlobalConnection, Context.BIND_AUTO_CREATE
-                )
-            }
-            GlobalConnection.reBind?.invoke()
-        }
     }
 }

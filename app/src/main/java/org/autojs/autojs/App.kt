@@ -17,6 +17,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.Configuration
 import com.aiselp.autox.engine.NodeScriptEngine.Companion.initModuleResource
 import com.aiselp.autox.ui.material3.activity.ErrorReportActivity
+import com.google.mlkit.common.MlKit
 import com.stardust.app.GlobalAppContext
 import com.stardust.autojs.core.pref.PrefKey
 import com.stardust.autojs.servicecomponents.EngineController
@@ -86,6 +87,7 @@ class App : Application(), Configuration.Provider {
                 delay(1000)
                 ShizukuProvider.requestBinderForNonProviderProcess(this@App)
             }
+            MlKit.initialize(this)
         }
         Log.i(
             TAG, "Pid: ${Process.myPid()}, isScriptProcess: ${ProcessUtils.isScriptProcess(this)}"

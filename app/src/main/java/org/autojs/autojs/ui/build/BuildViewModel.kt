@@ -16,6 +16,7 @@ import com.aiselp.autox.apkbuilder.ApkSignUtil
 import com.stardust.app.GlobalAppContext
 import com.stardust.autojs.project.Asset
 import com.stardust.autojs.project.Constant
+import com.stardust.autojs.project.LaunchConfig
 import com.stardust.autojs.project.ProjectConfig
 import com.stardust.autojs.project.SigningConfig
 import com.stardust.pio.PFiles
@@ -127,6 +128,8 @@ class BuildViewModel(private val app: Application, private var source: String) :
     var isRequiredAccessibilityServices by mutableStateOf(false)
     var isRequiredBackgroundStart by mutableStateOf(false)
     var isRequiredDrawOverlay by mutableStateOf(false)
+    var isRequiredFileManagerPermission by mutableStateOf(false)
+    var isRequiredPublishNotificationPermission by mutableStateOf(false)
 
     //--
     var splashText by mutableStateOf(app.getString(R.string.powered_by_autojs))
@@ -264,7 +267,7 @@ class BuildViewModel(private val app: Application, private var source: String) :
             outputPath = viewModel.outputPath
             assets = updateAssets(assets)
             isEncrypt = viewModel.isEncrypt
-            updateLibs(libs)
+            libs = updateLibs()
             updateAbiList(abis)
             if (ignoredDirs.isEmpty()) ignoredDirs = listOf(buildDir)
             name = viewModel.appName
@@ -273,7 +276,7 @@ class BuildViewModel(private val app: Application, private var source: String) :
             packageName = viewModel.packageName
             mainScript = viewModel.mainScriptFile
             icon = viewModel.icon?.toRelativePathOrString()
-            launchConfig.apply {
+            launchConfig = LaunchConfig().apply {
                 isStableMode = viewModel.isStableMode
                 displaySplash = viewModel.displaySplash
                 isHideLauncher = viewModel.isHideLauncher
@@ -386,14 +389,15 @@ class BuildViewModel(private val app: Application, private var source: String) :
         }
     }
 
-    private fun updateLibs(libs: MutableList<String>) {
-        libs.clear()
+    private fun updateLibs(): MutableList<String> {
+        val libs = mutableListOf<String>()
         if (isRequiredOpenCv) libs.addAll(Constant.Libraries.OPEN_CV)
         if (isRequiredPaddleOCR) libs.addAll(Constant.Libraries.PADDLE_OCR)
         if (isRequiredMlKitOCR) libs.addAll(Constant.Libraries.GOOGLE_ML_KIT_OCR)
         if (isRequiredTesseractOCR) libs.addAll(Constant.Libraries.TESSERACT_OCR)
         if (isRequired7Zip) libs.addAll(Constant.Libraries.P7ZIP)
         if (isRequiredTerminalEmulator) libs.addAll(Constant.Libraries.TERMINAL_EMULATOR)
+        return libs
     }
 
     private fun updatePermissions(): List<String> {
@@ -401,6 +405,8 @@ class BuildViewModel(private val app: Application, private var source: String) :
         if (isRequiredAccessibilityServices) permissionList.add(Constant.Permissions.ACCESSIBILITY_SERVICES)
         if (isRequiredBackgroundStart) permissionList.add(Constant.Permissions.BACKGROUND_START)
         if (isRequiredDrawOverlay) permissionList.add(Constant.Permissions.DRAW_OVERLAY)
+        if (isRequiredFileManagerPermission) permissionList.add(Constant.Permissions.EXTERNAL_STORAGE)
+        if (isRequiredPublishNotificationPermission) permissionList.add(Constant.Permissions.PUBLISH_NOTIFICATION)
         return permissionList
     }
 
@@ -455,6 +461,14 @@ class BuildViewModel(private val app: Application, private var source: String) :
 
                 Constant.Permissions.DRAW_OVERLAY -> {
                     isRequiredDrawOverlay = true
+                }
+
+                Constant.Permissions.EXTERNAL_STORAGE -> {
+                    isRequiredFileManagerPermission = true
+                }
+
+                Constant.Permissions.PUBLISH_NOTIFICATION -> {
+                    isRequiredPublishNotificationPermission = true
                 }
             }
         }

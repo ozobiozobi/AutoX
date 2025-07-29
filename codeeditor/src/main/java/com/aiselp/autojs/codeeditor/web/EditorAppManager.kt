@@ -2,15 +2,21 @@ package com.aiselp.autojs.codeeditor.web
 
 import android.app.Activity
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.WebView
+import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.webkit.WebViewAssetLoader
 import com.aiselp.autojs.codeeditor.EditActivity
+import com.aiselp.autojs.codeeditor.dialogs.AssetDownloadDialog
 import com.aiselp.autojs.codeeditor.dialogs.LoadDialog
 import com.aiselp.autojs.codeeditor.plugins.AppController
 import com.aiselp.autojs.codeeditor.plugins.FileSystem
+import com.stardust.io.Zip
 import com.stardust.pio.PFiles
+import com.stardust.toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -18,8 +24,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
 
 class EditorAppManager(val context: Activity, val editorModel: EditActivity.EditorModel) {
     companion object {
@@ -34,23 +38,21 @@ class EditorAppManager(val context: Activity, val editorModel: EditActivity.Edit
     private val jsBridge = JsBridge(webView)
     private val pluginManager = PluginManager(jsBridge, coroutineScope)
     var openedFile: String? = null
+
+    private val call = (context as ComponentActivity).registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { data -> importAsset(data) }
     val loadDialog = LoadDialog()
+    val assetDownloadDialog = object : AssetDownloadDialog() {
+        override fun onNeutralClick() {
+            call.launch(arrayOf("application/zip"))
+        }
+    }
 
     init {
         webView.webViewClient =
             FileAssetWebViewClient(File(context.filesDir, "$WEB_PUBLIC_PATH/dist"))
         installPlugin()
-        coroutineScope.launch {
-            loadDialog.show()
-            initWebResources()
-            loadDialog.setContent("启动中")
-            delay(500)
-            withContext(Dispatchers.Main) {
-//                webView.loadUrl("http://192.168.10.10:8010")
-                webView.loadUrl("https://${WebViewAssetLoader.DEFAULT_DOMAIN}")
-                loadDialog.dismiss()
-            }
-        }
         jsBridge.registerHandler("app.init", JsBridge.Handle { _, _ ->
             pluginManager.onWebInit()
             val file = openedFile
@@ -58,6 +60,21 @@ class EditorAppManager(val context: Activity, val editorModel: EditActivity.Edit
                 openFile(file)
             }
         })
+        coroutineScope.launch {
+            if (checkAssets()) {
+                withContext(Dispatchers.Main) { loadDialog.show() }
+                initWebResources()
+                launchPage()
+            } else {
+                if (File(File(context.filesDir, WEB_PUBLIC_PATH), "dist").isDirectory) {
+                    withContext(Dispatchers.Main) { loadDialog.show() }
+                    launchPage()
+                } else
+                    withContext(Dispatchers.Main) {
+                        assetDownloadDialog.show()
+                    }
+            }
+        }
     }
 
     private fun installPlugin() {
@@ -66,6 +83,32 @@ class EditorAppManager(val context: Activity, val editorModel: EditActivity.Edit
             AppController.TAG,
             AppController(context, editorModel, coroutineScope)
         )
+    }
+
+    private fun importAsset(data: Uri?) {
+        if (data == null) return
+        val stream = context.contentResolver.openInputStream(data)
+        if (stream == null) {
+            toast(context, "导入失败")
+            return
+        }
+        assetDownloadDialog.dismiss()
+        loadDialog.show()
+        coroutineScope.launch(Dispatchers.IO) {
+            loadDialog.setContent("正在安装")
+            Zip.unzip(stream, File(context.filesDir, WEB_PUBLIC_PATH))
+            launchPage()
+        }
+    }
+
+    private suspend fun launchPage() {
+        loadDialog.setContent("启动中")
+        delay(500)
+        withContext(Dispatchers.Main) {
+//                webView.loadUrl("http://192.168.10.10:8010")
+            webView.loadUrl("https://${WebViewAssetLoader.DEFAULT_DOMAIN}")
+            loadDialog.dismiss()
+        }
     }
 
     private suspend fun initWebResources() {
@@ -80,26 +123,20 @@ class EditorAppManager(val context: Activity, val editorModel: EditActivity.Edit
         } else loadDialog.setContent("正在安装")
         Log.i(TAG, "initWebResources")
         webDir.mkdirs()
-        context.assets.open(WEB_DIST_PATH).use { it ->
-            ZipInputStream(it).use { zip ->
-                var zipEntry: ZipEntry? = null;
-                while (true) {
-                    zipEntry = zip.nextEntry
-                    if (zipEntry == null) break
-                    val file = File(webDir, zipEntry.name)
-                    if (zipEntry.isDirectory) {
-                        file.mkdirs()
-                    } else {
-                        file.outputStream().use {
-                            zip.copyTo(it)
-                        }
-                    }
-                    zip.closeEntry()
-                }
-            }
+        withContext(Dispatchers.IO) {
+            Zip.unzip(context.assets.open(WEB_DIST_PATH), webDir)
+            val versionCode = String(context.assets.open(VERSION_FILE).use { it.readBytes() })
+            versionFile.writeText(versionCode)
         }
-        val versionCode = String(context.assets.open(VERSION_FILE).use { it.readBytes() })
-        versionFile.writeText(versionCode)
+    }
+
+    private fun checkAssets(): Boolean {
+        try {
+            context.assets.open(WEB_DIST_PATH).close()
+            return true
+        } catch (e: Exception) {
+            return false
+        }
     }
 
     private fun isUpdate(file: File): Boolean {
