@@ -3,13 +3,25 @@ autoxjs 整个项目的一些更新日志,双版本号为稳定版（内容以�
 
 ## [Unreleased](https://github.com/kkevsekk1/AutoX/compare/7.0.5...HEAD) 未发布
 
+## [7.1.6] - 2025-8-17
+* <font color="#ec5315">**api变更**: canvas事件'draw'仅会在可用时触发一次</font>
+* 画布示例更新
+* 新增canvas.updateCanvas()函数触发'draw'事件
+* 升级nodejs引擎
+* 新增Images.registerAsyncCapture()方法
+* ui更新
+* 修复许多问题
+
+by [colman-lee](https://github.com/colman-lee)
+* 修复currentPackage、通过id找控件不稳定的Bug（onAccessibilityEvent不能异步调用，event对象会被回收）
+
 ## [7.1.5] - 2025-7-13
 * 新增打包应用特殊权限配置
 * 服务连接优化
 * 新增通知权限开关
 * 新增v7_mini体积减小版本
 
-by [colman-lee]()https://github.com/colman-lee
+by [colman-lee](https://github.com/colman-lee)
 * 修复Shizuku图标大小
 * 升级GoogleMLKit为16.0.1稳定版本，返回结果增加Level4
 * 修复TemplateMatching中Mat资源没有正确释放的问题

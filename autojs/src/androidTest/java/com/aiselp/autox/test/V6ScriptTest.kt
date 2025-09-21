@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.aiselp.autox.test.activicy.TestLogActivity
 import com.aiselp.autox.test.utils.getGlobalProperty
+import com.aiselp.autox.test.utils.openAssetDir
 import com.aiselp.autox.test.utils.openScriptAsset
 import com.aiselp.autox.test.utils.toDouble
 import com.stardust.autojs.AutoJs
@@ -27,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.io.path.pathString
 
 @RunWith(AndroidJUnit4::class)
 @MediumTest
@@ -143,6 +145,38 @@ class V6ScriptTest {
             ScriptFile(file.toFile()).toSource(),
             resultViewer,
             ExecutionConfig(workingDirectory = file.parent.toString())
+        )
+        resultViewer.waitForSuccess()
+    }
+
+    @Test
+    fun java_type(): Unit = runBlocking {
+        val resultViewer = ScriptResultViewer()
+        getScriptEngineService().execute(
+            openScriptSource("java_type.js"),
+            resultViewer,
+        )
+        resultViewer.waitForSuccess()
+    }
+
+    @Test
+    fun java_adapter(): Unit = runBlocking {
+        val resultViewer = ScriptResultViewer()
+        getScriptEngineService().execute(
+            openScriptSource("java_adapter.js"),
+            resultViewer
+        )
+        resultViewer.waitForSuccess()
+    }
+
+    @Test
+    fun images(): Unit = runBlocking {
+        val dir = openAssetDir(application, "$v6AccessDir/images")
+        val resultViewer = ScriptResultViewer()
+        getScriptEngineService().execute(
+            ScriptFile(dir.resolve("test1.js").pathString).toSource(),
+            resultViewer,
+            ExecutionConfig(workingDirectory = dir.pathString)
         )
         resultViewer.waitForSuccess()
     }

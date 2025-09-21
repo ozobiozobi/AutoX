@@ -12,7 +12,6 @@ import com.stardust.autojs.script.StringScriptSource;
 
 import org.autojs.autojs.Pref;
 import org.autojs.autojs.autojs.AutoJs;
-import org.autojs.autojs.model.script.PathChecker;
 
 import java.io.File;
 
@@ -46,7 +45,7 @@ public class ScriptIntents {
         config.setArgument("intent", intent);
         if (path == null && script != null) {
             source = new StringScriptSource(script);
-        } else if (path != null && new PathChecker(context).checkAndToastError(path)) {
+        } else if (path != null) {
             JavaScriptFileSource fileScriptSource = new JavaScriptFileSource(path);
             if (script != null) {
                 source = new SequenceScriptSource(fileScriptSource.getName(), new StringScriptSource(script), fileScriptSource);

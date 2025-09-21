@@ -9,9 +9,14 @@ import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
-import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isNotEmpty
+import androidx.lifecycle.ViewModel
+import com.aiselp.autox.utils.loadScriptExecute
+import com.aiselp.autox.utils.saveScriptExecute
 import com.stardust.autojs.ScriptEngineService
+import com.stardust.autojs.annotation.ScriptInterface
 import com.stardust.autojs.core.eventloop.EventEmitter
 import com.stardust.autojs.core.eventloop.SimpleEvent
 import com.stardust.autojs.engine.JavaScriptEngine
@@ -20,118 +25,55 @@ import com.stardust.autojs.engine.LoopBasedJavaScriptEngine.ExecuteCallback
 import com.stardust.autojs.engine.ScriptEngine
 import com.stardust.autojs.engine.ScriptEngineManager
 import com.stardust.autojs.execution.ExecutionConfig.CREATOR.tag
+import com.stardust.autojs.execution.ScriptExecuteActivity.ActivityScriptExecution
+import com.stardust.autojs.execution.ScriptExecuteActivity.Companion.EXTRA_EXECUTION_ID
 import com.stardust.autojs.execution.ScriptExecution.AbstractScriptExecution
 import com.stardust.autojs.runtime.ScriptRuntime
-import com.stardust.autojs.script.ScriptSource
+import com.stardust.toast
 import org.mozilla.javascript.ContinuationPending
 
 /**
  * Created by Stardust on 2017/2/5.
  */
 class ScriptExecuteActivity : AppCompatActivity() {
-    private var mResult: Any? = null
-    private lateinit var mScriptEngine: ScriptEngine<*>
-    private var mExecutionListener: ScriptExecutionListener? = null
-    private var mScriptSource: ScriptSource? = null
-    private lateinit var mScriptExecution: ActivityScriptExecution
-    private lateinit var mRuntime: ScriptRuntime
-    lateinit var eventEmitter: EventEmitter
-        private set
+    val model by viewModels<Model>()
+    val eventEmitter
+        @ScriptInterface get() = model.eventEmitter
 
-    // FIXME: 2018/3/16 如果Activity被回收则得不到改进
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val executionId = intent.getIntExtra(EXTRA_EXECUTION_ID, ScriptExecution.NO_ID)
-        if (executionId == ScriptExecution.NO_ID) {
+        val execution = loadDef() ?: loadScriptExecute(intent, savedInstanceState)
+        if (execution == null) {
+            toast(this, "脚本环境异常")
             super.finish()
             return
         }
-        val execution = ScriptEngineService.instance?.getScriptExecution(executionId)
-        if (execution == null || execution !is ActivityScriptExecution) {
-            Toast.makeText(this, "脚本环境异常", Toast.LENGTH_SHORT).show()
-            super.finish()
-            return
-        }
-        mScriptExecution = execution
-        mScriptSource = mScriptExecution.source
-        mScriptEngine = mScriptExecution.createEngine(this)
-        mExecutionListener = mScriptExecution.listener
-        mRuntime = (mScriptEngine as JavaScriptEngine).runtime
-        eventEmitter = EventEmitter(mRuntime.bridges)
-        runScript()
+        if (execution is ActivityScriptExecution)
+            execution.createEngine(this)
+        model.init(execution)
+        runScript(model.scriptExecution)
         emit("create", savedInstanceState)
     }
 
-    private fun runScript() {
-        try {
-            prepare()
-            doExecution()
-        } catch (pending: ContinuationPending) {
-            pending.printStackTrace()
-        } catch (e: Throwable) {
-            onException(e)
-        }
-    }
-
-    private fun onException(e: Throwable) {
-        mExecutionListener!!.onException(mScriptExecution, e)
+    fun onException(e: Throwable) {
+        model.onException(e)
         super.finish()
     }
 
-    private fun doExecution() {
-        mScriptEngine.setTag(ScriptEngine.TAG_SOURCE, mScriptSource)
-        mExecutionListener!!.onStart(mScriptExecution)
-        (mScriptEngine as LoopBasedJavaScriptEngine?)!!.execute(
-            mScriptSource,
-            object : ExecuteCallback {
-                override fun onResult(r: Any) {
-                    mResult = r
-                }
-
-                override fun onException(e: Exception) {
-                    this@ScriptExecuteActivity.onException(e)
-                }
-            })
-    }
-
-    private fun prepare() {
-        mScriptEngine.put("activity", this)
-        mScriptEngine.setTag("activity", this)
-        mScriptEngine.setTag(ScriptEngine.TAG_ENV_PATH, mScriptExecution!!.config.path)
-        mScriptEngine.setTag(
-            ScriptEngine.TAG_WORKING_DIRECTORY,
-            mScriptExecution.config.workingDirectory
-        )
-        mScriptEngine.init()
-    }
-
     override fun finish() {
-        if (mExecutionListener == null) {
-            super.finish()
-            return
-        }
-        val exception = mScriptEngine.uncaughtException
-        if (exception != null) {
-            onException(exception)
-        } else {
-            mExecutionListener!!.onSuccess(mScriptExecution, mResult)
-        }
+        model.finish()
         super.finish()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(LOG_TAG, "onDestroy")
-        if (::mScriptEngine.isInitialized) {
-            mScriptEngine.put("activity", null)
-            mScriptEngine.setTag("activity", null)
-            mScriptEngine.destroy()
-        }
+        model.destroy()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.saveScriptExecute(model.scriptExecution.source, model.scriptExecution.config)
         super.onSaveInstanceState(outState)
-        outState.putInt(EXTRA_EXECUTION_ID, mScriptExecution.id)
         emit("save_instance_state", outState)
     }
 
@@ -182,7 +124,7 @@ class ScriptExecuteActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         emit("create_options_menu", menu)
-        return menu.size() > 0
+        return menu.isNotEmpty()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -191,15 +133,11 @@ class ScriptExecuteActivity : AppCompatActivity() {
         return e.consumed || super.onOptionsItemSelected(item)
     }
 
-    fun emit(event: String?, vararg args: Any?) {
-        try {
-            eventEmitter.emit(event, *args)
-        } catch (e: Exception) {
-            mRuntime.exit(e)
-        }
+    fun emit(event: String, vararg args: Any?) {
+        model.emit(event, *args)
     }
 
-    class ActivityScriptExecution internal constructor(
+    class ActivityScriptExecution(
         private val mScriptEngineManager: ScriptEngineManager,
         task: ScriptExecutionTask?
     ) : AbstractScriptExecution(task) {
@@ -216,23 +154,115 @@ class ScriptExecuteActivity : AppCompatActivity() {
         }
     }
 
+    class Model : ViewModel() {
+        lateinit var scriptEngine: ScriptEngine<*>
+        var executionListener: ScriptExecutionListener? = null
+        lateinit var scriptExecution: ScriptExecution
+        lateinit var runtime: ScriptRuntime
+        lateinit var eventEmitter: EventEmitter
+
+        fun init(execution: ScriptExecution) {
+            scriptExecution = execution
+            this.scriptEngine = execution.engine
+            executionListener = execution.listener
+            runtime = (execution.engine as JavaScriptEngine).runtime
+            eventEmitter = EventEmitter(runtime.bridges)
+        }
+
+        fun onException(e: Throwable) {
+            executionListener?.onException(scriptExecution, e)
+        }
+
+        fun onSuccess(result: Any?) {
+            executionListener?.onSuccess(scriptExecution, result)
+        }
+
+        fun onStart() = executionListener?.onStart(scriptExecution)
+
+        fun finish() {
+            val exception = scriptEngine.uncaughtException
+            if (exception != null) {
+                onException(exception)
+            } else {
+                onSuccess(null)
+            }
+        }
+
+        fun destroy() {
+            if (::scriptEngine.isInitialized) {
+                scriptEngine.put("activity", null)
+                scriptEngine.setTag("activity", null)
+                scriptEngine.destroy()
+            }
+        }
+
+        fun emit(event: String, vararg args: Any?) {
+            try {
+                eventEmitter.emit(event, *args)
+            } catch (e: Exception) {
+                runtime.exit(e)
+            }
+        }
+    }
+
     companion object {
         private const val LOG_TAG = "ScriptExecuteActivity"
-        private val EXTRA_EXECUTION_ID = ScriptExecuteActivity::class.java.name + ".execution_id"
+        val EXTRA_EXECUTION_ID = ScriptExecuteActivity::class.java.name + ".execution_id"
 
-        @JvmStatic
-        fun execute(
-            context: Context,
-            manager: ScriptEngineManager,
-            task: ScriptExecutionTask
-        ): ActivityScriptExecution {
-            val execution = ActivityScriptExecution(manager, task)
+        fun start(context: Context, execution: ActivityScriptExecution) {
             val i = Intent(context, ScriptExecuteActivity::class.java)
                 .putExtra(EXTRA_EXECUTION_ID, execution.id)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .addFlags(task.config.intentFlags)
+                .addFlags(execution.config.intentFlags)
             context.startActivity(i)
-            return execution
         }
+    }
+}
+
+fun ScriptExecuteActivity.loadDef(): ScriptExecution? {
+    val executionId = intent.getIntExtra(EXTRA_EXECUTION_ID, ScriptExecution.NO_ID)
+    if (executionId == ScriptExecution.NO_ID) return null
+
+    val execution = ScriptEngineService.instance?.getScriptExecution(executionId)
+    if (execution is ActivityScriptExecution) {
+        return execution
+    }
+    return null
+}
+
+fun ScriptExecuteActivity.runScript(execution: ScriptExecution) {
+    if (execution is ActivityScriptExecution) {
+        runScript(this, execution)
+    } else if (execution is RunnableScriptExecution) {
+        execution.run()
+    }
+}
+
+fun runScript(activity: ScriptExecuteActivity, execution: ActivityScriptExecution) {
+    try {
+        val scriptEngine = execution.engine!!
+        scriptEngine.put("activity", activity)
+        scriptEngine.setTag("activity", activity)
+        scriptEngine.setTag(ScriptEngine.TAG_ENV_PATH, execution.config.path)
+        scriptEngine.setTag(
+            ScriptEngine.TAG_WORKING_DIRECTORY,
+            execution.config.workingDirectory
+        )
+        scriptEngine.init()
+
+        scriptEngine.setTag(ScriptEngine.TAG_SOURCE, execution.source)
+        activity.model.onStart()
+        val onException2 = activity::onException
+        (scriptEngine as LoopBasedJavaScriptEngine).execute(
+            execution.source, object : ExecuteCallback {
+                override fun onResult(r: Any) {}
+                override fun onException(e: Exception) {
+                    onException2(e)
+                }
+            })
+    } catch (pending: ContinuationPending) {
+        pending.printStackTrace()
+    } catch (e: Throwable) {
+        activity.onException(e)
     }
 }

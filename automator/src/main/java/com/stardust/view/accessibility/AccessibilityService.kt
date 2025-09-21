@@ -30,6 +30,8 @@ open class AccessibilityService : android.accessibilityservice.AccessibilityServ
     val gestureEventDispatcher = EventDispatcher<GestureListener>()
 
     private var mFastRootInActiveWindow: AccessibilityNodeInfo? = null
+
+    //事件执行线程池，异步执行要注意事件对象可能会被回收或修改
     private val eventExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -45,13 +47,11 @@ open class AccessibilityService : android.accessibilityservice.AccessibilityServ
             }
         }
 
-        eventExecutor.execute {
-            for ((_, delegate) in mDelegates) {
-                if (delegate.eventTypes?.contains(event.eventType) == false)
-                    continue
-                if (delegate.onAccessibilityEvent(this@AccessibilityService, event))
-                    break
-            }
+        for ((_, delegate) in mDelegates) {
+            if (delegate.eventTypes?.contains(event.eventType) == false)
+                continue
+            if (delegate.onAccessibilityEvent(this@AccessibilityService, event))
+                break
         }
     }
 
@@ -61,11 +61,12 @@ open class AccessibilityService : android.accessibilityservice.AccessibilityServ
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
-        Log.v(TAG, "onKeyEvent: $event")
+        val eventClone = KeyEvent(event)
+        Log.v(TAG, "onKeyEvent: $eventClone")
         eventExecutor.execute {
-            stickOnKeyObserver.onKeyEvent(event.keyCode, event)
-            onKeyObserver.onKeyEvent(event.keyCode, event)
-            keyObserver.onNext(event)
+            stickOnKeyObserver.onKeyEvent(eventClone.keyCode, eventClone)
+            onKeyObserver.onKeyEvent(eventClone.keyCode, eventClone)
+            keyObserver.onNext(eventClone)
         }
         return keyInterrupterObserver.onInterceptKeyEvent(event)
     }

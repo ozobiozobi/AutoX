@@ -16,7 +16,6 @@ import java.util.List;
  * Created by Stardust on 2017/10/25.
  */
 
-@RequiresApi(api = Build.VERSION_CODES.N_MR1)
 public class ShortcutManager {
 
 
@@ -38,7 +37,6 @@ public class ShortcutManager {
     }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     public void addPinnedShortcut(CharSequence label, String id, Icon icon, Intent intent) {
         if (!mShortcutManager.isRequestPinShortcutSupported()) {
             return;
@@ -63,7 +61,6 @@ public class ShortcutManager {
         return id.hashCode() >>> 16;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N_MR1)
     public void addDynamicShortcut(CharSequence label, String id, Icon icon, Intent intent) {
         ShortcutInfo shortcut = buildShortcutInfo(label, id, icon, intent);
         try {
@@ -74,13 +71,11 @@ public class ShortcutManager {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N_MR1)
     private void removeTheFirstShortcut() {
         List<ShortcutInfo> dynamicShortcuts = mShortcutManager.getDynamicShortcuts();
         mShortcutManager.removeDynamicShortcuts(Collections.singletonList(dynamicShortcuts.get(0).getId()));
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N_MR1)
     private void addDynamicShortcutUnchecked(ShortcutInfo shortcut) {
         mShortcutManager.addDynamicShortcuts(Collections.singletonList(shortcut));
     }

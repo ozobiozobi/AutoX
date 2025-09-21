@@ -4,8 +4,10 @@ plugins {
     id("com.android.library")
     id("kotlin-android")
 }
-kotlin {
-    jvmToolchain(17)
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(versions.javaVersionInt))
+    }
 }
 android {
     compileSdk = versions.compile
@@ -38,10 +40,6 @@ android {
             res.srcDirs("src/main/res", "src/main/res-i18n")
         }
     }
-    compileOptions {
-        sourceCompatibility = versions.javaVersion
-        targetCompatibility = versions.javaVersion
-    }
     namespace = "com.stardust"
 }
 
@@ -55,6 +53,7 @@ dependencies {
     api(libs.compose.material3.adaptive.navigation.suite)
     api(libs.androidx.webkit)
     api(libs.commons.exec)
+    api(libs.androidx.datastore)
     api("com.github.hyb1996:settingscompat:1.1.5")
     implementation(libs.androidx.activity.ktx)
     implementation(libs.appcompat)

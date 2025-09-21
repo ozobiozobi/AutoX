@@ -1,5 +1,6 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import java.io.FileNotFoundException
+import java.util.Base64
 
 plugins {
     id("com.android.application")
@@ -9,8 +10,14 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(versions.javaVersionInt))
+    }
+}
 
 android {
+    namespace = "org.autojs.autoxjs"
     compileSdk = versions.compile
     defaultConfig {
         applicationId = "org.autojs.autoxjs"
@@ -21,12 +28,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 //        multiDexEnabled = true
         buildConfigField("boolean", "isMarket", "false")
-        javaCompileOptions {
-            annotationProcessorOptions {
-                arguments["resourcePackageName"] = applicationId.toString()
-                arguments["androidManifestFile"] = "$projectDir/src/main/AndroidManifest.xml"
-            }
-        }
+
         resourceConfigurations.addAll(
             listOf("zh", "en", "es", "ar", "ja", "zh_TW", "fr", "de", "it", "ko", "ru", "tr", "lt")
         )
@@ -42,10 +44,6 @@ android {
     lint {
         abortOnError = false
         disable.addAll(listOf("MissingTranslation", "ExtraTranslation"))
-    }
-    compileOptions {
-        sourceCompatibility = versions.javaVersion
-        targetCompatibility = versions.javaVersion
     }
 
     splits {
@@ -63,24 +61,38 @@ android {
             isUniversalApk = false
         }
     }
+    val signing =
+        if (System.getenv("CI") == "true" && !System.getenv("KEYSTORE_BASE64").isNullOrEmpty()) {
+            val file = File.createTempFile("key", "jks")
+            val bytes = Base64.getDecoder().decode(System.getenv("KEYSTORE_BASE64"))
+            file.writeBytes(bytes)
+            signingConfigs.create("release") {
+                storeFile = file
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        } else null
+
     buildTypes {
         named("debug") {
             isShrinkResources = false
             isMinifyEnabled = false
             setProguardFiles(
                 listOf(
-                    getDefaultProguardFile("proguard-android.txt"),
-                    "proguard-rules.pro"
+                    getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
                 )
             )
         }
         named("release") {
+            if (signing != null) {
+                signingConfig = signing
+            }
             isShrinkResources = false
             isMinifyEnabled = false
             setProguardFiles(
                 listOf(
-                    getDefaultProguardFile("proguard-android.txt"),
-                    "proguard-rules.pro"
+                    getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
                 )
             )
         }
@@ -115,11 +127,9 @@ android {
                     delete(
                         fileTree(outputDir) {
                             include(
-                                "codeeditor/**/*",
-                                "template.apk"
+                                "codeeditor/**/*", "template.apk"
                             )
-                        }
-                    )
+                        })
                 }
             }
         }
@@ -140,12 +150,10 @@ android {
         //ktor netty implementation("io.ktor:ktor-server-netty:2.0.1")
         resources.pickFirsts.addAll(
             listOf(
-                "META-INF/io.netty.versions.properties",
-                "META-INF/INDEX.LIST"
+                "META-INF/io.netty.versions.properties", "META-INF/INDEX.LIST"
             )
         )
     }
-    namespace = "org.autojs.autoxjs"
 
 }
 
@@ -158,7 +166,6 @@ dependencies {
     implementation(libs.androidx.webkit)
 
     implementation(libs.compose.ui)
-    implementation(libs.compose.material)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.mlkit.common)
     androidTestImplementation(libs.compose.ui.test.junit4)
@@ -176,7 +183,6 @@ dependencies {
     implementation(libs.preference.ktx)
     implementation(libs.appcompat) //
 
-    implementation(libs.material)
     implementation(libs.compose.material3)
     implementation(libs.compose.material3.window.size)
     implementation(libs.compose.material3.adaptive.navigation.suite)
@@ -266,12 +272,14 @@ if (!File(assetsDir, "template.apk").isFile) {
 }
 
 tasks.register("buildTemplateApp") {
+    group = "build"
     dependsOn(":inrt:assembleTemplateRelease")
     doFirst {
         copyTemplateToAPP(false, assetsDir)
     }
 }
 tasks.register("buildDebugTemplateApp") {
+    group = "build"
     dependsOn(":inrt:assembleTemplateDebug")
     doFirst {
         copyTemplateToAPP(true, assetsDir)
@@ -283,6 +291,7 @@ tasks.named("clean").configure {
     }
 }
 tasks.register("buildDocs") {
+    group = "build"
     doLast {
         val v2DocDir = File(rootProject.projectDir, "docs/v2")
         val jsApiDir = File(rootProject.projectDir, "autojs/src/main/js/v7-api")
@@ -300,7 +309,7 @@ tasks.register("buildDocs") {
                 execSync('npm run docs', { stdio: 'inherit' })
             """.trimIndent()
             )
-            commandLine("node", buildFile.path)
+            execCommand("node " + buildFile.path)
         }
         copy {
             from(File(jsApiDir, "docs"))
@@ -316,7 +325,7 @@ tasks.register("buildDocs") {
                 execSync('npm run build', { stdio: 'inherit' })
             """.trimIndent()
             )
-            commandLine("node", buildFile.path)
+            execCommand("node " + buildFile.path)
         }
         copy {
             from(File(v2DocDir, "build"))

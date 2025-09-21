@@ -59,7 +59,7 @@ class JsUi(nodeScriptEngine: NodeScriptEngine) : NativeApi {
         childrens: List<ComposeElement>
     ): ComposeElement {
         val element = ComposeElement(tag)
-        converterV8ValueObject(props, element.props)
+        converterV8ValueObject(props, element)
         element.children.addAll(childrens)
         return element
     }
@@ -96,7 +96,7 @@ class JsUi(nodeScriptEngine: NodeScriptEngine) : NativeApi {
     @V8Function
     fun patchProp(element: ComposeElement, key: String, value: V8Value?) {
         val value1 = converterValue(value)
-        element.props[key] = value1
+        element.setProp(key, value1)
     }
 
 
@@ -105,8 +105,7 @@ class JsUi(nodeScriptEngine: NodeScriptEngine) : NativeApi {
         val promiseAdapter = promiseFactory.newPromiseAdapter()
         val activityEventDelegate = createActivityEventDelegate(listener)
         val builder = ScriptActivityBuilder(element, activityEventDelegate)
-        eventLoopQueue.keepRunning()
-        VueUiScriptActivity.startActivity(context, builder, object : VueUiScriptActivity.Lifecycle {
+        val l = object : VueUiScriptActivity.Lifecycle {
             override fun onCreate(activity: VueUiScriptActivity) {
                 activitys.add(activity)
                 promiseAdapter.resolve(activity)
@@ -114,12 +113,11 @@ class JsUi(nodeScriptEngine: NodeScriptEngine) : NativeApi {
 
             override fun onDestroy(activity: VueUiScriptActivity) {
                 activitys.remove(activity)
-                if (activitys.isEmpty()) {
-                    eventLoopQueue.cancelKeepRunning()
-                }
+                eventLoopQueue.cancelPersistentTask(this)
             }
-
-        })
+        }
+        eventLoopQueue.createPersistentTask(l)
+        VueUiScriptActivity.startActivity(context, builder, l)
         return promiseAdapter.promise
     }
 
@@ -143,14 +141,13 @@ class JsUi(nodeScriptEngine: NodeScriptEngine) : NativeApi {
 
     private fun converterV8ValueObject(
         v8Value: V8ValueObject,
-        props: MutableMap<String, Any?> = mutableMapOf()
-    ): MutableMap<String, Any?> {
+        el: ComposeElement
+    ) {
         v8Value.forEach<V8Value, V8Value, Exception> { key, value ->
             if (key is V8ValueString) {
-                props[key.toString()] = converterValue(value)
+                el.setProp(key.toString(), converterValue(value))
             }
         }
-        return props
     }
 
     companion object {

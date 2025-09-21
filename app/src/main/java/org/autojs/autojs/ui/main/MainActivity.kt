@@ -10,11 +10,14 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.DrawerState
-import androidx.compose.material.Scaffold
-import androidx.compose.material.rememberScaffoldState
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,12 +32,17 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.viewpager2.widget.ViewPager2
 import com.aiselp.autox.ui.material3.BottomBar
 import com.aiselp.autox.ui.material3.DrawerPage
 import com.aiselp.autox.ui.material3.MainTopAppBar
+import com.aiselp.autox.ui.material3.components.DialogController
+import com.aiselp.autox.ui.material3.components.UpdateDialog
+import com.aiselp.autox.ui.material3.components.isIgnoreUpdate
 import com.aiselp.autox.ui.material3.theme.AppTheme
 import com.stardust.autojs.IndependentScriptService
+import com.stardust.autojs.servicecomponents.ScriptServiceConnection
 import com.stardust.autojs.util.PermissionUtil
 import com.stardust.autojs.util.StoragePermissionResultContract
 import com.stardust.toast
@@ -45,6 +53,7 @@ import org.autojs.autojs.Pref
 import org.autojs.autojs.timing.TimedTaskScheduler
 import org.autojs.autojs.ui.floating.FloatyWindowManger
 import org.autojs.autojs.ui.main.components.DocumentPageMenuButton
+import org.autojs.autojs.ui.main.drawer.DrawerViewModel
 import org.autojs.autojs.ui.main.scripts.ScriptListFragment
 import org.autojs.autojs.ui.main.task.TaskManagerFragmentKt
 import org.autojs.autojs.ui.main.web.EditorAppManager
@@ -53,12 +62,11 @@ import org.autojs.autoxjs.R
 
 data class BottomNavigationItem(val icon: Int, val label: String)
 
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val scriptListFragment by lazy { ScriptListFragment() }
     private val taskManagerFragment by lazy { TaskManagerFragmentKt() }
     private val webViewFragment by lazy { EditorAppManager() }
-    private var drawerState: DrawerState? = null
     private val viewPager: ViewPager2 by lazy { ViewPager2(this) }
 
 
@@ -66,6 +74,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         Log.i("MainActivity", "Pid: ${Process.myPid()}")
+        ScriptServiceConnection.GlobalConnection.bind(application)
 
         if (Pref.isForegroundServiceEnabled()) {
             IndependentScriptService.startForeground(this)
@@ -82,9 +91,11 @@ class MainActivity : FragmentActivity() {
         setContent {
             val scope = rememberCoroutineScope()
             var lastBackPressedTime = remember { 0L }
+
+            val drawerState = rememberDrawerState(DrawerValue.Closed)
             BackHandler {
-                if (drawerState?.isOpen == true) {
-                    scope.launch(Dispatchers.Main) { drawerState?.close() }
+                if (drawerState.isOpen) {
+                    scope.launch(Dispatchers.Main) { drawerState.close() }
                     return@BackHandler
                 }
                 if (viewPager.currentItem == 0 && scriptListFragment.onBackPressed()) {
@@ -107,16 +118,19 @@ class MainActivity : FragmentActivity() {
                 }
             }
             AppTheme {
-                MainPage(
-                    activity = this,
-                    scriptListFragment = scriptListFragment,
-                    taskManagerFragment = taskManagerFragment,
-                    webViewFragment = webViewFragment,
-                    onDrawerState = {
-                        this.drawerState = it
-                    },
-                    viewPager = viewPager
-                )
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    gesturesEnabled = drawerState.isOpen,
+                    drawerContent = { DrawerPage() }
+                ) {
+                    MainPage(
+                        scriptListFragment = scriptListFragment,
+                        taskManagerFragment = taskManagerFragment,
+                        webViewFragment = webViewFragment,
+                        viewPager = viewPager,
+                        drawerState = drawerState,
+                    )
+                }
             }
         }
     }
@@ -129,16 +143,13 @@ class MainActivity : FragmentActivity() {
 
 @Composable
 fun MainPage(
-    activity: FragmentActivity,
     scriptListFragment: ScriptListFragment,
     taskManagerFragment: TaskManagerFragmentKt,
     webViewFragment: EditorAppManager,
-    onDrawerState: (DrawerState) -> Unit,
+    drawerState: DrawerState,
     viewPager: ViewPager2
 ) {
     val context = LocalContext.current
-    val scaffoldState = rememberScaffoldState()
-    onDrawerState(scaffoldState.drawerState)
     val scope = rememberCoroutineScope()
 
     val bottomBarItems = remember {
@@ -150,11 +161,9 @@ fun MainPage(
     Scaffold(
         modifier = Modifier
             .fillMaxSize(),
-        scaffoldState = scaffoldState,
-        drawerGesturesEnabled = scaffoldState.drawerState.isOpen,
         topBar = {
             MainTopAppBar(
-                openMenuRequest = { scope.launch { scaffoldState.drawerState.open() } }
+                openMenuRequest = { scope.launch { drawerState.open() } }
             ) {
                 if (currentPage == 2)
                     DocumentPageMenuButton { webViewFragment.swipeRefreshWebView.webView }
@@ -163,16 +172,30 @@ fun MainPage(
         bottomBar = {
             BottomBar(bottomBarItems, currentPage, onSelectedChange = { currentPage = it })
         },
-        drawerContent = { DrawerPage() },
     ) {
+        val model: DrawerViewModel = viewModel()
+        val dialogController = remember { DialogController() }
+        dialogController.UpdateDialog(autoUpdate = true)
+        LaunchedEffect(Unit) {
+            model.checkUpdate(
+                onUpdate = {
+                    val name = model.githubReleaseInfo?.name
+                    scope.launch {
+                        if (name != null && !isIgnoreUpdate(context, name)) {
+                            dialogController.show()
+                        }
+                    }
+                }, toast = false
+            )
+        }
+
         AndroidView(
-            modifier = Modifier
-                .padding(it),
+            modifier = Modifier.padding(it),
             factory = {
                 viewPager.apply {
                     fillMaxSize()
                     adapter = ViewPager2Adapter(
-                        activity,
+                        context as FragmentActivity,
                         scriptListFragment,
                         taskManagerFragment,
                         webViewFragment

@@ -49,37 +49,26 @@ function postMultipart(url: string, files?: any, options?: HttpOptions, callback
 
 
 function request(url: string, options?: HttpOptions, callback?: K): Response | void {
-    var cont: any = null;
-
-    if (!callback && ui.isUiThread() && continuation.enabled) {
-        cont = continuation.create();
+    if (!callback && ui.isUiThread()) {
+        throw new Error("http.request: Synchronous http request is not allowed in UI thread");
     }
     var call = http.client().newCall(http.buildRequest(url, options));
-    if (!callback && !cont) {
+    if (!callback) {
         return wrapResponse(call.execute());
     }
     call.enqueue(new Callback({
         onResponse: function (call: unknown, res: any) {
             res = wrapResponse(res);
-            if (cont) {
-                cont.resume(res);
-            }
             if (callback) {
                 callback(res);
             }
         },
         onFailure: function (call: unknown, ex: any) {
-            if (cont) {
-                cont.resumeError(ex);
-            }
             if (callback) {
                 callback(null, ex);
             }
         }
     }));
-    if (cont) {
-        return cont.await();
-    }
 }
 
 function buildRequest(url: string, options?: HttpOptions) {

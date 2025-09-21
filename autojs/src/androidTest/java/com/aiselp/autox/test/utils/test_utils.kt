@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.aiselp.autox.engine.NodeScriptEngine
 import com.stardust.autojs.engine.RhinoJavaScriptEngine
 import com.stardust.autojs.engine.ScriptEngine
+import com.stardust.pio.PFiles
 import org.mozilla.javascript.ScriptableObject
 import java.nio.file.Files
 import java.nio.file.Path
@@ -23,10 +24,10 @@ fun ScriptEngine<*>.getGlobalProperty(key: String): Any? {
 }
 
 fun Any?.toDouble(): Double? {
-    when (this) {
-        is Double -> return this
-        is Number -> return this.toDouble()
-        else -> return null
+    return when (this) {
+        is Double -> this
+        is Number -> this.toDouble()
+        else -> null
     }
 }
 
@@ -50,4 +51,11 @@ fun openScriptAsset(context: android.content.Context, assetName: String): Path {
         Files.write(file, it.readBytes())
         return file
     }
+}
+
+fun openAssetDir(context: android.content.Context, dirName: String): Path {
+    val tempDirectory =
+        Files.createTempDirectory(context.cacheDir.toPath(), "test_script")
+    PFiles.copyAssetDir(context.assets, dirName, tempDirectory.toFile())
+    return tempDirectory
 }

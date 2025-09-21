@@ -71,14 +71,7 @@ class ScriptEngineService internal constructor(builder: ScriptEngineServiceBuild
         return mScriptExecutionObserver.removeScriptExecutionListener(listener)
     }
 
-    fun execute(task: ScriptExecutionTask): ScriptExecution {
-        val execution = executeInternal(task)
-        mScriptExecutions[execution.id] = execution
-        return execution
-    }
-
-    //脚本启动入口
-    private fun executeInternal(task: ScriptExecutionTask): ScriptExecution {
+    fun setupExecutionTaskListener(task: ScriptExecutionTask) {
         if (task.listener != null) {
             task.setExecutionListener(
                 ScriptExecutionObserver.Wrapper(
@@ -89,19 +82,43 @@ class ScriptEngineService internal constructor(builder: ScriptEngineServiceBuild
         } else {
             task.setExecutionListener(mScriptExecutionObserver)
         }
+    }
+
+    fun execute(task: ScriptExecutionTask): ScriptExecution {
+        val execution = executeInternal(task)
+        mScriptExecutions[execution.id] = execution
+        return execution
+    }
+
+    fun createScriptExecution(task: ScriptExecutionTask): ScriptExecution {
         val source = task.source
         if (source is JavaScriptSource) {
             val mode = source.executionMode
             if (mode and JavaScriptSource.EXECUTION_MODE_UI != 0) {
-                return ScriptExecuteActivity.execute(mContext, mScriptEngineManager, task)
+                return ScriptExecuteActivity.ActivityScriptExecution(mScriptEngineManager, task)
             }
         }
         val scriptExecution: RunnableScriptExecution = when (source) {
             is JavaScriptSource -> LoopedBasedJavaScriptExecution(mScriptEngineManager, task)
             else -> RunnableScriptExecution(mScriptEngineManager, task)
         }
-        ThreadCompat(scriptExecution).start()
         return scriptExecution
+    }
+
+    fun startScriptExecution(scriptExecution: ScriptExecution) {
+        if (scriptExecution is RunnableScriptExecution) {
+            ThreadCompat(scriptExecution).start()
+        } else if (scriptExecution is ScriptExecuteActivity.ActivityScriptExecution) {
+            ScriptExecuteActivity.start(mContext, scriptExecution)
+        }
+    }
+
+    //脚本启动入口
+    private fun executeInternal(task: ScriptExecutionTask): ScriptExecution {
+        setupExecutionTaskListener(task)
+        val execution = createScriptExecution(task)
+        startScriptExecution(execution)
+        return execution
     }
 
     fun execute(
@@ -126,10 +143,7 @@ class ScriptEngineService internal constructor(builder: ScriptEngineServiceBuild
     fun stopAllAndToast() {
         val n = stopAll()
         if (n > 0) mUiHandler.toast(
-            String.format(
-                mContext.getString(R.string.text_already_stop_n_scripts),
-                n
-            )
+            mContext.getString(R.string.text_already_stop_n_scripts, n),
         )
     }
 

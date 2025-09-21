@@ -1,5 +1,6 @@
 package com.stardust.autojs.rhino
 
+import android.os.Build
 import android.os.Looper
 import android.util.Log
 import com.stardust.autojs.runtime.ScriptBridges
@@ -87,10 +88,16 @@ open class AndroidContextFactory(private val cacheDirectory: File) : ContextFact
     }
 
     open class WrapFactory : org.mozilla.javascript.WrapFactory() {
+        init {
+            isJavaPrimitiveWrap = false
+        }
+
         override fun wrap(cx: Context, scope: Scriptable, obj: Any?, staticType: Class<*>?): Any? {
             return when (obj) {
-                is UiObject -> UiObjectProxy(obj)
-                is String -> bridges.toString(obj)
+                is UiObject -> if (Build.VERSION.SDK_INT >= 30) {
+                    super.wrap(cx, scope, obj, staticType)
+                } else UiObjectProxy(obj)
+
                 is UiObjectCollection -> bridges.asArray(obj)
                 else -> super.wrap(cx, scope, obj, staticType)
             }

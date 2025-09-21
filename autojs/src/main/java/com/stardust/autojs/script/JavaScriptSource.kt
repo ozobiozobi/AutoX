@@ -11,7 +11,6 @@ import java.io.StringReader
  * Created by Stardust on 2017/8/2.
  */
 abstract class JavaScriptSource(name: String) : ScriptSource(name) {
-    private var mExecutionMode = -1
     abstract val script: String
     abstract val scriptReader: Reader?
     val nonNullScriptReader: Reader
@@ -21,13 +20,9 @@ abstract class JavaScriptSource(name: String) : ScriptSource(name) {
         return name
     }
 
-    val executionMode: Int
-        get() {
-            if (mExecutionMode == -1) {
-                mExecutionMode = parseExecutionMode()
-            }
-            return mExecutionMode
-        }
+    val executionMode: Int by lazy {
+        parseExecutionMode()
+    }
 
     protected open fun parseExecutionMode(): Int {
         val script = script

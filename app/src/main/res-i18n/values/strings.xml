@@ -557,4 +557,5 @@
     <string name="import_template_apk_desc">当前版本不包含模板apk资源，请前往下载（template.apk）并导入</string>
     <string name="special_permissions_configuration">特殊权限配置</string>
     <string name="special_permissions_configuration_desc">勾选以下权限要求会让打包的app启动时向用户申请并取得权限后才能运行</string>
+    <string name="text_is_not_executable">文件无法运行</string>
 </resources>
